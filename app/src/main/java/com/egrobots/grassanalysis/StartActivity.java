@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.widget.Button;
 
 import com.egrobots.grassanalysis.presentation.RecordScreenActivity;
+import com.egrobots.grassanalysis.presentation.RecordScreenActivity2;
 
 public class StartActivity extends AppCompatActivity {
 

@@ -1,5 +1,8 @@
 <resources>
-    <string name="app_name">Grass Analysis</string>
-    <string name="record_and_send_your_question">Record and Send your question..</string>
+    <string name="app_name">مساعد الفلاح</string>
+    <string name="record_and_send_your_question">صور وابعت سؤالك..</string>
+    <string name="uploaded">تم تحميل</string>
+    <string name="video_uploaded">تم تحميل الفيديو بنجاح</string>
+    <string name="uploading">جاري التحميل</string>
 
 </resources>

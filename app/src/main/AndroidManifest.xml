@@ -13,7 +13,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".presentation.RecordScreenActivity"/>
+        <activity android:name=".presentation.RecordScreenActivity2"/>
+        <activity android:name=".presentation.RecordScreenActivity" />
         <activity android:name=".StartActivity" />
         <activity
             android:name=".presentation.SplashActivity"
@@ -24,6 +25,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <meta-data
+            android:name="preloaded_fonts"
+            android:resource="@array/preloaded_fonts" />
     </application>
+
+<!--    <uses-feature android:name="android.hardware.camera.any" />-->
+<!--    <uses-permission android:name="android.permission.RECORD_AUDIO" />-->
+<!--    <uses-permission-->
+<!--        android:name="android.permission.WRITE_EXTERNAL_STORAGE"-->
+<!--        android:maxSdkVersion="28" />-->
+
+<!--    <uses-permission android:name="android.permission.CAMERA" />-->
 
 </manifest>
