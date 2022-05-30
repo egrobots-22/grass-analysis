@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "1077690140247",
+    "firebase_url": "https://grass-analysis-default-rtdb.firebaseio.com",
+    "project_id": "grass-analysis",
+    "storage_bucket": "grass-analysis.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1077690140247:android:efd6fc24e8771e52aa4512",
+        "android_client_info": {
+          "package_name": "com.egrobots.grassanalysis"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1077690140247-p4olfhkniabpj1q98s6tu1mqhq5g6ve4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARVVNR7wjweKhJn_b05nJGFppvdxIrTSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1077690140247-p4olfhkniabpj1q98s6tu1mqhq5g6ve4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
