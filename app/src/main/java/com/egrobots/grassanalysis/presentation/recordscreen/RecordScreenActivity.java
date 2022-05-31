@@ -43,7 +43,8 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
     ViewModelProviderFactory providerFactory;
     @Inject
     LoadingDialog loadingDialog;
-    private ProgressDialog progressDialog;
+    @Inject
+    Utils utils;
     private RecordScreenViewModel recordScreenViewModel;
 
     @Override
@@ -97,22 +98,9 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
         super.onActivityResult(requestCode, resultCode, intent);
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
             Uri videoUri = intent.getData();
-//            String type = utils.getFileType(videoUri);
             videoView.setVideoURI(videoUri);
-            recordScreenViewModel.uploadVideo(videoUri, getDeviceToken());
+            String fileType = utils.getFieType(videoUri);
+            recordScreenViewModel.uploadVideo(videoUri, fileType);
         }
     }
-
-    private String getFileType(Uri videouri) {
-        ContentResolver r = getContentResolver();
-        // get the file type ,in this case its mp4
-        MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
-        return mimeTypeMap.getExtensionFromMimeType(r.getType(videouri));
-    }
-
-    private String getDeviceToken() {
-        SharedPreferences sharedPreferences = getSharedPreferences("data", MODE_PRIVATE);
-        return sharedPreferences.getString("DEVICE_TOKEN", null);
-    }
-
 }

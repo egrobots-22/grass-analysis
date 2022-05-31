@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.LoadingDialog;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.google.firebase.database.FirebaseDatabase;
@@ -46,7 +47,13 @@ public class AppModule {
     @Singleton
     @Provides
     static SharedPreferences provideSharedPreferences(Application application) {
-        return application.getSharedPreferences("data", Context.MODE_PRIVATE);
+        return application.getSharedPreferences(Constants.PREF_NAME, Context.MODE_PRIVATE);
+    }
+
+    @Singleton
+    @Provides
+    static Utils provideUtils(Application application) {
+        return new Utils(application);
     }
 
 }

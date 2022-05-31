@@ -4,6 +4,7 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.egrobots.grassanalysis.data.DatabaseRepository;
+import com.egrobots.grassanalysis.data.LocalDataRepository;
 import com.egrobots.grassanalysis.utils.StateResource;
 
 import javax.inject.Inject;
@@ -21,18 +22,20 @@ public class RecordScreenViewModel extends ViewModel {
 
     private static final String TAG = "RecordScreenViewModel";
     private DatabaseRepository databaseRepository;
+    private LocalDataRepository localDataRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
     private MediatorLiveData<StateResource> onStatusChange = new MediatorLiveData<>();
     private MediatorLiveData<Double> uploadingProgress = new MediatorLiveData<>();
 
     @Inject
-    public RecordScreenViewModel(DatabaseRepository databaseRepository) {
+    public RecordScreenViewModel(DatabaseRepository databaseRepository, LocalDataRepository localDataRepository) {
         Log.d(TAG, "RecordScreenViewModel: working...");
         this.databaseRepository = databaseRepository;
+        this.localDataRepository = localDataRepository;
     }
 
-    public void uploadVideo(Uri videoUri, String deviceToken) {
-        databaseRepository.uploadVideo(videoUri, deviceToken)
+    public void uploadVideo(Uri videoUri, String fileType) {
+        databaseRepository.uploadVideo(videoUri, fileType, localDataRepository.getDeviceToken())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()

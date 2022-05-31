@@ -2,6 +2,8 @@ package com.egrobots.grassanalysis.datasource.locale;
 
 import android.content.SharedPreferences;
 
+import com.egrobots.grassanalysis.utils.Constants;
+
 import javax.inject.Inject;
 
 public class SharedPreferencesDataSource {
@@ -15,6 +17,6 @@ public class SharedPreferencesDataSource {
 
 
     public String getDeviceToken() {
-        return sharedPreferences.getString("DEVICE_TOKEN", null);
+        return sharedPreferences.getString(Constants.DEVICE_TOKEN, null);
     }
 }

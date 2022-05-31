@@ -17,11 +17,8 @@ public class DatabaseRepository {
         this.firebaseDataSource = firebaseDataSource;
     }
 
-    public Flowable<Double> uploadVideo(Uri videoUri, String deviceToken) {
-        return firebaseDataSource.uploadVideo(videoUri, deviceToken);
+    public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken) {
+        return firebaseDataSource.uploadVideo(videoUri, fileType, deviceToken);
     }
 
-//    public Completable saveVideoInfo(boolean test) {
-//        return firebaseDataSource.saveVideoInfo(test);
-//    }
 }

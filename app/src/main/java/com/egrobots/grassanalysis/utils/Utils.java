@@ -11,12 +11,11 @@ public class Utils {
 
     private Context context;
 
-    @Inject
     public Utils(Context context) {
         this.context = context;
     }
 
-    public String getFileType(Uri videoUri) {
+    public String getFieType(Uri videoUri) {
         ContentResolver r = context.getContentResolver();
         // get the file type ,in this case its mp4
         MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();

@@ -1,16 +1,13 @@
 package com.egrobots.grassanalysis.datasource.remote;
 
 import android.net.Uri;
-import android.widget.Toast;
 
-import com.egrobots.grassanalysis.R;
-import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
+import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -21,9 +18,6 @@ import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
 import io.reactivex.BackpressureStrategy;
-import io.reactivex.Completable;
-import io.reactivex.CompletableEmitter;
-import io.reactivex.CompletableOnSubscribe;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
@@ -40,21 +34,8 @@ public class FirebaseDataSource {
         this.firebaseDatabase = firebaseDatabase;
     }
 
-//    public Completable saveVideoInfo(boolean test) {
-//        return Completable.create(new CompletableOnSubscribe() {
-//            @Override
-//            public void subscribe(CompletableEmitter emitter) throws Exception {
-//                if (test) {
-//                    emitter.onComplete();
-//                } else {
-//                    emitter.onError(new Throwable("test error message"));
-//                }
-//            }
-//        });
-//    }
-
     private void saveVideoInfo(FlowableEmitter<Double> emitter, String videoUri, String deviceToken) {
-        DatabaseReference reference1 = firebaseDatabase.getReference("videos");
+        DatabaseReference reference1 = firebaseDatabase.getReference(Constants.VIDEOS_INFO_NODE);
         HashMap<String, String> map = new HashMap<>();
         map.put("video_link", videoUri);
         map.put("device_token", deviceToken);
@@ -72,11 +53,11 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<Double> uploadVideo(Uri videoUri, String deviceToken) {
+    public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken) {
         return Flowable.create(new FlowableOnSubscribe<Double>() {
             @Override
             public void subscribe(FlowableEmitter<Double> emitter) throws Exception {
-                final StorageReference reference = storageReference.child("Files/" + System.currentTimeMillis() + ".mp4");
+                final StorageReference reference = storageReference.child(Constants.STORAGE_REF + "/" + System.currentTimeMillis() + "." + fileType);
                 UploadTask uploadTask = reference.putFile(videoUri);
                 uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
                     @Override
@@ -100,7 +81,8 @@ public class FirebaseDataSource {
                         });
                         return reference.getDownloadUrl();
                     }
-                });;
+                });
+                ;
             }
         }, BackpressureStrategy.BUFFER);
     }

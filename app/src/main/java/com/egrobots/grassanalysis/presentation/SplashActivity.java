@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import com.egrobots.grassanalysis.StartActivity;
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -33,7 +34,7 @@ public class SplashActivity extends AppCompatActivity {
                     // Get new FCM registration token
                     String token = task.getResult();
                     SharedPreferences.Editor editor = getSharedPreferences("data", MODE_PRIVATE).edit();
-                    editor.putString("DEVICE_TOKEN", token);
+                    editor.putString(Constants.DEVICE_TOKEN, token);
                     editor.apply();
                     startActivity(new Intent(SplashActivity.this, StartActivity.class));
                 }
