@@ -11,6 +11,7 @@ import javax.inject.Inject;
 import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.ViewModel;
 import io.reactivex.CompletableObserver;
+import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
@@ -22,6 +23,7 @@ public class RecordScreenViewModel extends ViewModel {
     private DatabaseRepository databaseRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
     private MediatorLiveData<StateResource> onStatusChange = new MediatorLiveData<>();
+    private MediatorLiveData<Double> uploadingProgress = new MediatorLiveData<>();
 
     @Inject
     public RecordScreenViewModel(DatabaseRepository databaseRepository) {
@@ -29,11 +31,12 @@ public class RecordScreenViewModel extends ViewModel {
         this.databaseRepository = databaseRepository;
     }
 
-    public void uploadVideo(Uri videoUri, boolean test) {
-        databaseRepository.uploadVideo(videoUri, true)
+    public void uploadVideo(Uri videoUri, String deviceToken) {
+        databaseRepository.uploadVideo(videoUri, deviceToken)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new CompletableObserver() {
+                .toObservable()
+                .subscribe(new Observer<Double>() {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
@@ -41,19 +44,29 @@ public class RecordScreenViewModel extends ViewModel {
                     }
 
                     @Override
-                    public void onComplete() {
-                        onStatusChange.setValue(StateResource.success());
+                    public void onNext(Double progress) {
+                        uploadingProgress.setValue(progress);
                     }
 
                     @Override
                     public void onError(Throwable e) {
                         onStatusChange.setValue(StateResource.error(e.getMessage()));
+                        Log.d(TAG, "onError: " + e);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        onStatusChange.setValue(StateResource.success());
                     }
                 });
     }
 
     public MediatorLiveData<StateResource> observeStatusChange() {
         return onStatusChange;
+    }
+
+    public MediatorLiveData<Double> observeUploadingProgress() {
+        return uploadingProgress;
     }
 
     @Override

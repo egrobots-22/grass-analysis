@@ -2,11 +2,11 @@ package com.egrobots.grassanalysis.data;
 
 import android.net.Uri;
 
-import com.egrobots.grassanalysis.datasource.FirebaseDataSource;
+import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 
 import javax.inject.Inject;
 
-import io.reactivex.Completable;
+import io.reactivex.Flowable;
 
 public class DatabaseRepository {
 
@@ -17,11 +17,11 @@ public class DatabaseRepository {
         this.firebaseDataSource = firebaseDataSource;
     }
 
-    public Completable uploadVideo(Uri videoUri, boolean test) {
-        return firebaseDataSource.uploadVideo(videoUri, test);
+    public Flowable<Double> uploadVideo(Uri videoUri, String deviceToken) {
+        return firebaseDataSource.uploadVideo(videoUri, deviceToken);
     }
 
-    public Completable saveVideoInfo(boolean test) {
-        return firebaseDataSource.saveVideoInfo(test);
-    }
+//    public Completable saveVideoInfo(boolean test) {
+//        return firebaseDataSource.saveVideoInfo(test);
+//    }
 }

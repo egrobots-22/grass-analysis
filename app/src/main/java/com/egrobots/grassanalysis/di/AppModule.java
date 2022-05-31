@@ -1,6 +1,11 @@
 package com.egrobots.grassanalysis.di;
 
+import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
+
 import com.egrobots.grassanalysis.utils.LoadingDialog;
+import com.egrobots.grassanalysis.utils.Utils;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.storage.FirebaseStorage;
@@ -36,6 +41,12 @@ public class AppModule {
     @Provides
     static LoadingDialog provideLoadingDialog() {
         return new LoadingDialog();
+    }
+
+    @Singleton
+    @Provides
+    static SharedPreferences provideSharedPreferences(Application application) {
+        return application.getSharedPreferences("data", Context.MODE_PRIVATE);
     }
 
 }

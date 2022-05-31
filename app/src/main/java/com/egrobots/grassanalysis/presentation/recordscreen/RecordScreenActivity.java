@@ -12,6 +12,7 @@ import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.utils.Utils;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 import com.egrobots.grassanalysis.utils.LoadingDialog;
 import com.google.android.gms.tasks.Continuation;
@@ -50,7 +51,20 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record_screen);
         ButterKnife.bind(this);
+
         recordScreenViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(RecordScreenViewModel.class);
+        observeStatusChange();
+        observerUploadingProgress();
+        dispatchTakeVideoIntent();
+    }
+
+    private void observerUploadingProgress() {
+        recordScreenViewModel.observeUploadingProgress().observe(this, progress -> {
+            loadingDialog.setTitle(getString(R.string.uploaded) + (int) progress.doubleValue() + "%");
+        });
+    }
+
+    private void observeStatusChange() {
         recordScreenViewModel.observeStatusChange().observe(this, stateResource -> {
             if (stateResource != null) {
                 switch (stateResource.status) {
@@ -59,6 +73,7 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
                         break;
                     case SUCCESS:
                         loadingDialog.dismiss();
+                        finish();
                         Toast.makeText(this, "Video uploaded Successfully", Toast.LENGTH_SHORT).show();
                         break;
                     case ERROR:
@@ -68,8 +83,6 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
                 }
             }
         });
-
-        dispatchTakeVideoIntent();
     }
 
     private void dispatchTakeVideoIntent() {
@@ -84,51 +97,10 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
         super.onActivityResult(requestCode, resultCode, intent);
         if (requestCode == REQUEST_VIDEO_CAPTURE && resultCode == RESULT_OK) {
             Uri videoUri = intent.getData();
+//            String type = utils.getFileType(videoUri);
             videoView.setVideoURI(videoUri);
-            recordScreenViewModel.uploadVideo(videoUri, true);
-//            progressDialog = new ProgressDialog(this);
-//            progressDialog.setTitle(getString(R.string.uploading));
-//            progressDialog.show();
-//            uploadVideoToFirebaseStorage(videoUri);
+            recordScreenViewModel.uploadVideo(videoUri, getDeviceToken());
         }
-    }
-
-    private void uploadVideoToFirebaseStorage(Uri videoUri) {
-        String deviceToken = getDeviceToken();
-        final StorageReference reference = FirebaseStorage.getInstance()
-                .getReference("Files/" + System.currentTimeMillis() + "." + getFileType(videoUri));
-
-        UploadTask uploadTask = reference.putFile(videoUri);
-        Task<Uri> urlTask = uploadTask.addOnProgressListener(snapshot -> {
-//            // show the progress bar
-            double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
-            progressDialog.setMessage(getString(R.string.uploaded) + (int) progress + "%");
-        }).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-            @Override
-            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                if (!task.isSuccessful()) {
-                    throw task.getException();
-                }
-
-                // Continue with the task to get the download URL
-                reference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
-                    @Override
-                    public void onComplete(@NonNull Task<Uri> task) {
-                        DatabaseReference reference1 = FirebaseDatabase.getInstance().getReference("videos");
-                        HashMap<String, String> map = new HashMap<>();
-                        map.put("video_link", task.getResult().toString());
-                        map.put("device_token", deviceToken);
-                        reference1.push().setValue(map);
-                        // Video uploaded successfully
-                        // Dismiss dialog
-                        progressDialog.dismiss();
-                        Toast.makeText(RecordScreenActivity.this, R.string.video_uploaded, Toast.LENGTH_SHORT).show();
-                        finish();
-                    }
-                });
-                return reference.getDownloadUrl();
-            }
-        });
     }
 
     private String getFileType(Uri videouri) {

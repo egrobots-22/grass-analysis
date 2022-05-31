@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.Gravity;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.TextView;
 
 import com.egrobots.grassanalysis.R;
 
@@ -32,5 +33,10 @@ public class LoadingDialog extends AppCompatDialogFragment {
         dialog.getWindow().setAttributes(lp);
 
         return dialog;
+    }
+
+    public void setTitle(String title) {
+        TextView titleTextView = getDialog().findViewById(R.id.title);
+        titleTextView.setText(title);
     }
 }

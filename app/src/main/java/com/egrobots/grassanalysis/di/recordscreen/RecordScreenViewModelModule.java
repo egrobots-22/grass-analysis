@@ -14,5 +14,5 @@ public abstract class RecordScreenViewModelModule {
     @Binds
     @IntoMap
     @ViewModelKey(RecordScreenViewModel.class)
-    public abstract ViewModel binViewModel(RecordScreenViewModel viewModel);
+    public abstract ViewModel bindViewModel(RecordScreenViewModel viewModel);
 }
