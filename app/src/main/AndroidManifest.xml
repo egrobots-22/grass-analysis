@@ -16,7 +16,7 @@
         android:theme="@style/AppTheme">
         <activity android:name=".presentation.RecordScreenActivity2"/>
         <activity android:name=".presentation.recordscreen.RecordScreenActivity" />
-        <activity android:name=".StartActivity" />
+        <activity android:name=".presentation.StartActivity" />
         <activity
             android:name=".presentation.SplashActivity"
             android:noHistory="true">

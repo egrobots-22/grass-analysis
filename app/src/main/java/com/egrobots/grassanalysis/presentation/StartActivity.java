@@ -1,15 +1,18 @@
-package com.egrobots.grassanalysis;
+package com.egrobots.grassanalysis.presentation;
+
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.Button;
+
+import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
 
 import androidx.appcompat.app.AppCompatActivity;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-
-import android.content.Intent;
-import android.os.Bundle;
-import android.widget.Button;
-
-import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
 
 public class StartActivity extends AppCompatActivity {
 

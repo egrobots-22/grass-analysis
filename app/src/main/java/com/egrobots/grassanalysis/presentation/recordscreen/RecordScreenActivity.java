@@ -2,11 +2,19 @@ package com.egrobots.grassanalysis.presentation.recordscreen;
 
 import android.app.ProgressDialog;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkInfo;
+import android.net.NetworkRequest;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 import android.widget.VideoView;
@@ -29,6 +37,7 @@ import java.util.HashMap;
 import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.lifecycle.ViewModelProvider;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -36,6 +45,7 @@ import dagger.android.support.DaggerAppCompatActivity;
 
 public class RecordScreenActivity extends DaggerAppCompatActivity {
     private static final int REQUEST_VIDEO_CAPTURE = 1;
+    private static final String TAG = RecordScreenActivity.class.getSimpleName();
 
     @BindView(R.id.videoView)
     VideoView videoView;
@@ -88,6 +98,7 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
 
     private void dispatchTakeVideoIntent() {
         Intent takeVideoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        takeVideoIntent.putExtra(MediaStore.EXTRA_DURATION_LIMIT, 30);
         if (takeVideoIntent.resolveActivity(getPackageManager()) != null) {
             startActivityForResult(takeVideoIntent, REQUEST_VIDEO_CAPTURE);
         }
