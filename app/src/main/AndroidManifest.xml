@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.egrobots.grassanalysis">
 
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="true" />
-
     <application
         android:name=".BaseActivity"
         android:allowBackup="true"
@@ -14,7 +10,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".presentation.RecordScreenActivity2"/>
+        <activity
+            android:name=".presentation.videos.SwipeableVideosActivity"
+            android:theme="@style/FullScreen" />
+        <activity android:name=".presentation.RecordScreenActivity2" />
         <activity android:name=".presentation.recordscreen.RecordScreenActivity" />
         <activity android:name=".presentation.StartActivity" />
         <activity
@@ -32,12 +31,10 @@
             android:resource="@array/preloaded_fonts" />
     </application>
 
-<!--    <uses-feature android:name="android.hardware.camera.any" />-->
-<!--    <uses-permission android:name="android.permission.RECORD_AUDIO" />-->
-<!--    <uses-permission-->
-<!--        android:name="android.permission.WRITE_EXTERNAL_STORAGE"-->
-<!--        android:maxSdkVersion="28" />-->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
 
-<!--    <uses-permission android:name="android.permission.CAMERA" />-->
+    <uses-permission android:name="android.permission.INTERNET" />
 
 </manifest>

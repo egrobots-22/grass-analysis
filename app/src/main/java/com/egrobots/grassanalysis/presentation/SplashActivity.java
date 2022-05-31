@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosActivity;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -30,7 +31,7 @@ public class SplashActivity extends AppCompatActivity {
                     SharedPreferences.Editor editor = getSharedPreferences("data", MODE_PRIVATE).edit();
                     editor.putString(Constants.DEVICE_TOKEN, token);
                     editor.apply();
-                    startActivity(new Intent(SplashActivity.this, StartActivity.class));
+                    startActivity(new Intent(SplashActivity.this, SwipeableVideosActivity.class));
                 }
             });
         }, SPLASH_TIME_OUT);
