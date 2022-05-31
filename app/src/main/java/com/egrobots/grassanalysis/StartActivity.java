@@ -9,8 +9,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 
-import com.egrobots.grassanalysis.presentation.RecordScreenActivity;
-import com.egrobots.grassanalysis.presentation.RecordScreenActivity2;
+import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
 
 public class StartActivity extends AppCompatActivity {
 

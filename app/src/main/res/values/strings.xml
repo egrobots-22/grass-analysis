@@ -4,5 +4,6 @@
     <string name="uploaded">تم تحميل</string>
     <string name="video_uploaded">تم تحميل الفيديو بنجاح</string>
     <string name="uploading">جاري التحميل</string>
+    <string name="please_wait">انتظر من فضلك</string>
 
 </resources>
