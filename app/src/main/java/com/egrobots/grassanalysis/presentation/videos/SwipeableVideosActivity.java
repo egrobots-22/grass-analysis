@@ -2,9 +2,12 @@ package com.egrobots.grassanalysis.presentation.videos;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import dagger.android.support.DaggerAppCompatActivity;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -13,7 +16,9 @@ import android.widget.Toast;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoItem;
+import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenViewModel;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -23,12 +28,17 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SwipeableVideosActivity extends AppCompatActivity implements VideosAdapter.ReplyCallback {
+import javax.inject.Inject;
+
+public class SwipeableVideosActivity extends DaggerAppCompatActivity implements VideosAdapter.ReplyCallback {
     private static final String TAG = SwipeableVideosActivity.class.getSimpleName();
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
-    private List<VideoItem> videoItems;
+    @Inject
+    ViewModelProviderFactory providerFactory;
+    private List<VideoItem> videoItems = new ArrayList<>();;
     private VideosAdapter videosAdapter;
+    private SwipeableVideosViewModel swipeableVideosViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,31 +46,21 @@ public class SwipeableVideosActivity extends AppCompatActivity implements Videos
         setContentView(R.layout.activity_swipeable_videos);
         ButterKnife.bind(this);
 
-        videoItems = new ArrayList<>();
-        //get videos from firebase storage
-        getVideosFromFirebase();
+        swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
+        swipeableVideosViewModel.getAllVideos();
         videosAdapter = new VideosAdapter(videoItems, this);
         viewPagerVideos.setAdapter(videosAdapter);
+        observeVideosUris();
     }
 
-    private void getVideosFromFirebase() {
-        DatabaseReference videosRef = FirebaseDatabase.getInstance().getReference(Constants.VIDEOS_INFO_NODE);
-        videosRef.addValueEventListener(new ValueEventListener() {
+    private void observeVideosUris() {
+        swipeableVideosViewModel.observeVideoUris().observe(this, new Observer<String>() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                for (DataSnapshot videoSnapshot : snapshot.getChildren()) {
-                    String videoUri = (String) videoSnapshot.child("video_link").getValue();
-                    VideoItem videoItem = new VideoItem();
-                    videoItem.setVideoUri(videoUri);
-                    videoItems.add(videoItem);
-                    videosAdapter.notifyDataSetChanged();
-                    Log.i(TAG, "onDataChange: " + videoUri);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-                Log.e(TAG, "onCancelled: ", error.toException() );
+            public void onChanged(String videoUri) {
+                VideoItem videoItem = new VideoItem();
+                videoItem.setVideoUri(videoUri);
+                videoItems.add(videoItem);
+                videosAdapter.notifyDataSetChanged();
             }
         });
     }

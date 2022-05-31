@@ -6,8 +6,12 @@ import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -17,6 +21,7 @@ import java.util.HashMap;
 import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
@@ -82,7 +87,66 @@ public class FirebaseDataSource {
                         return reference.getDownloadUrl();
                     }
                 });
-                ;
+            }
+        }, BackpressureStrategy.BUFFER);
+    }
+
+//    public Flowable<String> getAllVideos() {
+//        return Flowable.create(new FlowableOnSubscribe<String>() {
+//            @Override
+//            public void subscribe(FlowableEmitter<String> emitter) throws Exception {
+//                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.VIDEOS_INFO_NODE);
+//                videosRef.addValueEventListener(new ValueEventListener() {
+//                    @Override
+//                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                        for (DataSnapshot videoSnapshot : snapshot.getChildren()) {
+//                            String videoUri = (String) videoSnapshot.child("video_link").getValue();
+//                            emitter.onNext(videoUri);
+//                        }
+//                        emitter.onComplete();
+//                    }
+//
+//                    @Override
+//                    public void onCancelled(@NonNull DatabaseError error) {
+//                        emitter.onError(error.toException());
+//                    }
+//                });
+//            }
+//        }, BackpressureStrategy.BUFFER);
+//    }
+
+    public Flowable<String> getAllVideos() {
+        return Flowable.create(new FlowableOnSubscribe<String>() {
+            @Override
+            public void subscribe(FlowableEmitter<String> emitter) throws Exception {
+                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.VIDEOS_INFO_NODE);
+                videosRef.addChildEventListener(new ChildEventListener() {
+                    @Override
+                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                        String videoUri = (String) snapshot.child("video_link").getValue();
+                        emitter.onNext(videoUri);
+                    }
+
+                    @Override
+                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+                    }
+
+                    @Override
+                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
             }
         }, BackpressureStrategy.BUFFER);
     }

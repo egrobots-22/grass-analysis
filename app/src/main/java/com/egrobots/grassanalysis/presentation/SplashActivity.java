@@ -31,7 +31,7 @@ public class SplashActivity extends AppCompatActivity {
                     SharedPreferences.Editor editor = getSharedPreferences("data", MODE_PRIVATE).edit();
                     editor.putString(Constants.DEVICE_TOKEN, token);
                     editor.apply();
-                    startActivity(new Intent(SplashActivity.this, SwipeableVideosActivity.class));
+                    startActivity(new Intent(SplashActivity.this, StartActivity.class));
                 }
             });
         }, SPLASH_TIME_OUT);

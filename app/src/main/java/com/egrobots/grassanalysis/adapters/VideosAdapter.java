@@ -89,6 +89,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 }
             });
             videoView.setOnCompletionListener(mp -> mp.start());
+            videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    return false;
+                }
+            });
         }
 
         public String getReply() {

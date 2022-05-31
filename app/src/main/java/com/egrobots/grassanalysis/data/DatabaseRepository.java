@@ -21,4 +21,8 @@ public class DatabaseRepository {
         return firebaseDataSource.uploadVideo(videoUri, fileType, deviceToken);
     }
 
+    public Flowable<String> getAllVideos() {
+        return firebaseDataSource.getAllVideos();
+    }
+
 }

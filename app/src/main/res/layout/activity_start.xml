@@ -42,15 +42,28 @@
 
         <Button
             android:id="@+id/openRecordScreenButton"
+            style="?android:attr/borderlessButtonStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            style="?android:attr/borderlessButtonStyle"
-            android:textColor="@color/dark_gray"
-            android:textSize="18sp"
             android:drawableStart="@android:drawable/ic_menu_report_image"
             android:drawableTint="@color/colorPrimaryDark"
-            android:text="@string/record_and_send_your_question"/>
+            android:text="@string/record_and_send_your_question"
+            android:textColor="@color/dark_gray"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/openVideosScreenButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:drawableStart="@android:drawable/presence_video_away"
+            android:drawablePadding="8dp"
+            android:drawableTint="@color/colorPrimaryDark"
+            android:text="@string/browse_all_videos"
+            android:textColor="@color/dark_gray"
+            android:textSize="18sp" />
 
 
     </LinearLayout>
