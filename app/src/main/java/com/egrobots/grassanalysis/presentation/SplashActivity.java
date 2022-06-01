@@ -9,6 +9,7 @@ import android.os.Handler;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosActivity;
+import com.egrobots.grassanalysis.presentation.videos.tabs.VideosTabActivity;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.google.firebase.messaging.FirebaseMessaging;
 

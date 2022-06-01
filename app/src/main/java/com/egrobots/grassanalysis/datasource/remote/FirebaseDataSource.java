@@ -89,30 +89,6 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-//    public Flowable<String> getAllVideos() {
-//        return Flowable.create(new FlowableOnSubscribe<String>() {
-//            @Override
-//            public void subscribe(FlowableEmitter<String> emitter) throws Exception {
-//                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.VIDEOS_INFO_NODE);
-//                videosRef.addValueEventListener(new ValueEventListener() {
-//                    @Override
-//                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-//                        for (DataSnapshot videoSnapshot : snapshot.getChildren()) {
-//                            String videoUri = (String) videoSnapshot.child("video_link").getValue();
-//                            emitter.onNext(videoUri);
-//                        }
-//                        emitter.onComplete();
-//                    }
-//
-//                    @Override
-//                    public void onCancelled(@NonNull DatabaseError error) {
-//                        emitter.onError(error.toException());
-//                    }
-//                });
-//            }
-//        }, BackpressureStrategy.BUFFER);
-//    }
-
     public Flowable<VideoQuestionItem> getAllVideos() {
         return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
             @Override
@@ -125,6 +101,88 @@ public class FirebaseDataSource {
                             VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
                             videoQuestionItem.setId(questionSnapshot.getKey());
                             emitter.onNext(videoQuestionItem);
+                        }
+                    }
+
+                    @Override
+                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+                    }
+
+                    @Override
+                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
+            }
+        }, BackpressureStrategy.BUFFER);
+    }
+
+    public Flowable<VideoQuestionItem> getCurrentUserVideos(String deviceToken) {
+        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
+            @Override
+            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
+                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
+                videosRef.addChildEventListener(new ChildEventListener() {
+                    @Override
+                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                        if (deviceToken.equals(snapshot.getKey())) {
+                            for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
+                                VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
+                                videoQuestionItem.setId(questionSnapshot.getKey());
+                                emitter.onNext(videoQuestionItem);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+                    }
+
+                    @Override
+                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
+            }
+        }, BackpressureStrategy.BUFFER);
+    }
+
+    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken) {
+        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
+            @Override
+            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
+                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
+                videosRef.addChildEventListener(new ChildEventListener() {
+                    @Override
+                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                        if (!deviceToken.equals(snapshot.getKey())) {
+                            for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
+                                VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
+                                videoQuestionItem.setId(questionSnapshot.getKey());
+                                emitter.onNext(videoQuestionItem);
+                            }
                         }
                     }
 

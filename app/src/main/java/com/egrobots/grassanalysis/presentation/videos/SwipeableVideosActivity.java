@@ -30,7 +30,6 @@ public class SwipeableVideosActivity extends DaggerAppCompatActivity {
     @Inject
     ViewModelProviderFactory providerFactory;
     private List<VideoQuestionItem> videoItems = new ArrayList<>();
-    ;
     private VideosAdapter videosAdapter;
     private SwipeableVideosViewModel swipeableVideosViewModel;
 

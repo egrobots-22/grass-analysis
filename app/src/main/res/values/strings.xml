@@ -8,5 +8,11 @@
     <string name="write_answer_here">اكتب اجابتك هنا..</string>
     <string name="browse_all_videos">شوف كل الأسئلة</string>
     <string name="press_to_record">ابدأ بتسجيل اجابتك</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="your_questions">أسئلتك</string>
+    <string name="other_questions">أسئلة أخرى</string>
 
 </resources>

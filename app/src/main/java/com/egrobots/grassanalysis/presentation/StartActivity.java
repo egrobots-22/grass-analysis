@@ -9,6 +9,7 @@ import android.widget.Button;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
 import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosActivity;
+import com.egrobots.grassanalysis.presentation.videos.tabs.VideosTabActivity;
 
 import androidx.appcompat.app.AppCompatActivity;
 import butterknife.BindView;
@@ -34,6 +35,6 @@ public class StartActivity extends AppCompatActivity {
 
     @OnClick(R.id.openVideosScreenButton)
     public void onOpenVideosScreenButton() {
-        startActivity(new Intent(this, SwipeableVideosActivity.class));
+        startActivity(new Intent(this, VideosTabActivity.class));
     }
 }

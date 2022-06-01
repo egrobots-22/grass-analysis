@@ -26,4 +26,12 @@ public class DatabaseRepository {
         return firebaseDataSource.getAllVideos();
     }
 
+    public Flowable<VideoQuestionItem> getCurrentUserVideos(String deviceToken) {
+        return firebaseDataSource.getCurrentUserVideos(deviceToken);
+    }
+
+    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken) {
+        return firebaseDataSource.getOtherUsersVideos(deviceToken);
+    }
+
 }
