@@ -1,6 +1,7 @@
 package com.egrobots.grassanalysis.presentation.videos;
 
 import com.egrobots.grassanalysis.data.DatabaseRepository;
+import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 
 import javax.inject.Inject;
 
@@ -15,7 +16,7 @@ import io.reactivex.schedulers.Schedulers;
 public class SwipeableVideosViewModel extends ViewModel {
     private DatabaseRepository databaseRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
-    private MediatorLiveData<String> videoUris = new MediatorLiveData<>();
+    private MediatorLiveData<VideoQuestionItem> videoUris = new MediatorLiveData<>();
 
     @Inject
     public SwipeableVideosViewModel(DatabaseRepository databaseRepository) {
@@ -27,15 +28,15 @@ public class SwipeableVideosViewModel extends ViewModel {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()
-                .subscribe(new Observer<String>() {
+                .subscribe(new Observer<VideoQuestionItem>() {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
                     }
 
                     @Override
-                    public void onNext(String videoUri) {
-                        videoUris.setValue(videoUri);
+                    public void onNext(VideoQuestionItem questionItem) {
+                        videoUris.setValue(questionItem);
                     }
 
                     @Override
@@ -50,7 +51,7 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public MediatorLiveData<String> observeVideoUris() {
+    public MediatorLiveData<VideoQuestionItem> observeVideoUris() {
         return videoUris;
     }
 }

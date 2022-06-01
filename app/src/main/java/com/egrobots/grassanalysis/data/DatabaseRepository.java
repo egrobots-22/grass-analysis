@@ -2,6 +2,7 @@ package com.egrobots.grassanalysis.data;
 
 import android.net.Uri;
 
+import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 
 import javax.inject.Inject;
@@ -21,7 +22,7 @@ public class DatabaseRepository {
         return firebaseDataSource.uploadVideo(videoUri, fileType, deviceToken);
     }
 
-    public Flowable<String> getAllVideos() {
+    public Flowable<VideoQuestionItem> getAllVideos() {
         return firebaseDataSource.getAllVideos();
     }
 

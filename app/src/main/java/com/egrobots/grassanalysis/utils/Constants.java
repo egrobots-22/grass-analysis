@@ -6,4 +6,5 @@ public class Constants {
     public static final String PREF_NAME = "data";
     public static final String STORAGE_REF = "Files";
     public static final String VIDEOS_INFO_NODE = "videos";
+    public static final String QUESTIONS_NODE = "questions";
 }

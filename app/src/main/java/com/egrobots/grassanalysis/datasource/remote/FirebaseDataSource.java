@@ -2,6 +2,7 @@ package com.egrobots.grassanalysis.datasource.remote;
 
 import android.net.Uri;
 
+import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -40,16 +41,13 @@ public class FirebaseDataSource {
     }
 
     private void saveVideoInfo(FlowableEmitter<Double> emitter, String videoUri, String deviceToken) {
-        DatabaseReference reference1 = firebaseDatabase.getReference(Constants.VIDEOS_INFO_NODE);
-        HashMap<String, String> map = new HashMap<>();
-        map.put("video_link", videoUri);
-        map.put("device_token", deviceToken);
-        reference1.push().setValue(map).addOnCompleteListener(new OnCompleteListener<Void>() {
+        DatabaseReference reference1 = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
+        VideoQuestionItem videoQuestionItem = new VideoQuestionItem();
+        videoQuestionItem.setVideoQuestionUri(videoUri);
+        reference1.child(deviceToken).push().setValue(videoQuestionItem).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
                 if (task.isSuccessful()) {
-                    // Video uploaded successfully
-                    // Dismiss dialog
                     emitter.onComplete();
                 } else {
                     emitter.onError(task.getException());
@@ -115,16 +113,19 @@ public class FirebaseDataSource {
 //        }, BackpressureStrategy.BUFFER);
 //    }
 
-    public Flowable<String> getAllVideos() {
-        return Flowable.create(new FlowableOnSubscribe<String>() {
+    public Flowable<VideoQuestionItem> getAllVideos() {
+        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
             @Override
-            public void subscribe(FlowableEmitter<String> emitter) throws Exception {
-                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.VIDEOS_INFO_NODE);
+            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
+                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
                 videosRef.addChildEventListener(new ChildEventListener() {
                     @Override
                     public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                        String videoUri = (String) snapshot.child("video_link").getValue();
-                        emitter.onNext(videoUri);
+                        for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
+                            VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
+                            videoQuestionItem.setId(questionSnapshot.getKey());
+                            emitter.onNext(videoQuestionItem);
+                        }
                     }
 
                     @Override

@@ -1,16 +1,20 @@
 package com.egrobots.grassanalysis.adapters;
 
+import android.app.Activity;
 import android.media.MediaPlayer;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.VideoView;
 
+import com.devlomi.record_view.RecordButton;
+import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.model.VideoItem;
+import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.utils.RecordAudioImplementation;
 
 import java.util.List;
 
@@ -20,12 +24,12 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewHolder> {
-    private List<VideoItem> videoItems;
-    private ReplyCallback replyCallback;
+    private List<VideoQuestionItem> videoQuestionItems;
+    private Activity activity;
 
-    public VideosAdapter(List<VideoItem> videoItems, ReplyCallback replyCallback) {
-        this.videoItems = videoItems;
-        this.replyCallback = replyCallback;
+    public VideosAdapter(Activity activity, List<VideoQuestionItem> videoQuestionItems) {
+        this.activity = activity;
+        this.videoQuestionItems = videoQuestionItems;
     }
 
     @NonNull
@@ -37,31 +41,26 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
     @Override
     public void onBindViewHolder(@NonNull VideoViewHolder holder, int position) {
-        holder.setVideoData(videoItems.get(position));
-        holder.sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String reply = holder.getReply();
-                if (!reply.isEmpty()) {
-                    replyCallback.onSendClicked(reply);
-                }
-            }
-        });
-
+        VideoQuestionItem questionItem = videoQuestionItems.get(position);
+        holder.setVideoData(questionItem.getVideoQuestionUri());
+        RecordAudioImplementation recordAudioImplementation =
+                new RecordAudioImplementation(holder.recordView, holder.recordButton, questionItem);
+        recordAudioImplementation.attachActivity(activity);
+        recordAudioImplementation.setupRecordAudio();
     }
 
     @Override
     public int getItemCount() {
-        return videoItems.size();
+        return videoQuestionItems.size();
     }
 
-    static class VideoViewHolder extends RecyclerView.ViewHolder {
+    class VideoViewHolder extends RecyclerView.ViewHolder implements AttachActivityListener{
         @BindView(R.id.videoView)
         VideoView videoView;
-        @BindView(R.id.replyEditText)
-        EditText replyEditText;
-        @BindView(R.id.sendButton)
-        ImageButton sendButton;
+        @BindView(R.id.record_view)
+        RecordView recordView;
+        @BindView(R.id.record_button)
+        RecordButton recordButton;
         @BindView(R.id.progressBar)
         ProgressBar progressBar;
 
@@ -70,8 +69,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             ButterKnife.bind(this, itemView);
         }
 
-        void setVideoData(VideoItem videoItem) {
-            videoView.setVideoPath(videoItem.getVideoUri());
+        void setVideoData(String videoUri) {
+            videoView.setVideoPath(videoUri);
             videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
@@ -92,17 +91,20 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
                 public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.e("Error", "onError: "  );;
                     return false;
                 }
             });
         }
 
-        public String getReply() {
-            return replyEditText.getText().toString();
+        @Override
+        public void attachActivity(Activity activity) {
+
         }
     }
 
-    public interface ReplyCallback {
-        void onSendClicked(String reply);
+    public interface AttachActivityListener {
+        void attachActivity(Activity activity);
     }
+
 }

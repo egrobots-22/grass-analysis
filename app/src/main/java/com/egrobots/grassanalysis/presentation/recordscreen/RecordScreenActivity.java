@@ -1,43 +1,19 @@
 package com.egrobots.grassanalysis.presentation.recordscreen;
 
-import android.app.ProgressDialog;
-import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
-import android.net.NetworkRequest;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
-import android.webkit.MimeTypeMap;
 import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.utils.LoadingDialog;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
-import com.egrobots.grassanalysis.utils.LoadingDialog;
-import com.google.android.gms.tasks.Continuation;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
-
-import java.util.HashMap;
 
 import javax.inject.Inject;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.lifecycle.ViewModelProvider;
 import butterknife.BindView;
 import butterknife.ButterKnife;
