@@ -1,6 +1,6 @@
 package com.egrobots.grassanalysis.di;
 
-import com.egrobots.grassanalysis.presentation.videos.tabs.SwipeableVideosFragment;
+import com.egrobots.grassanalysis.presentation.videos.swipeablevideos.SwipeableVideosFragment;
 
 import dagger.Module;
 import dagger.android.ContributesAndroidInjector;

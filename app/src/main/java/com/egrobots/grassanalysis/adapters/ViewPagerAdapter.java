@@ -1,7 +1,6 @@
 package com.egrobots.grassanalysis.adapters;
 
-import com.egrobots.grassanalysis.presentation.videos.tabs.MyVideosFragment;
-import com.egrobots.grassanalysis.presentation.videos.tabs.SwipeableVideosFragment;
+import com.egrobots.grassanalysis.presentation.videos.swipeablevideos.SwipeableVideosFragment;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;

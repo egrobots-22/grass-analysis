@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/colorPrimary"
     android:orientation="vertical"
-    tools:context=".presentation.StartActivity">
+    tools:context=".presentation.start.StartActivity">
 
     <LinearLayout
         android:layout_width="wrap_content"

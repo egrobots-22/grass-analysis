@@ -1,4 +1,4 @@
-package com.egrobots.grassanalysis.presentation;
+package com.egrobots.grassanalysis.presentation.temp;
 
 import android.Manifest;
 import android.content.ContentValues;
@@ -22,9 +22,7 @@ import java.util.concurrent.Executors;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.CameraSelector;
-import androidx.camera.core.CameraX;
 import androidx.camera.core.Preview;
-import androidx.camera.core.impl.PreviewConfig;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.video.MediaStoreOutputOptions;
 import androidx.camera.video.PendingRecording;

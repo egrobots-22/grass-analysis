@@ -1,15 +1,12 @@
-package com.egrobots.grassanalysis.presentation;
+package com.egrobots.grassanalysis.presentation.start;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Button;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
-import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosActivity;
-import com.egrobots.grassanalysis.presentation.videos.tabs.VideosTabActivity;
+import com.egrobots.grassanalysis.presentation.videos.VideosTabActivity;
 
 import androidx.appcompat.app.AppCompatActivity;
 import butterknife.BindView;

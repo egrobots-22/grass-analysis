@@ -1,4 +1,4 @@
-package com.egrobots.grassanalysis.presentation.videos;
+package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.LocalDataRepository;

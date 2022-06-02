@@ -1,4 +1,4 @@
-package com.egrobots.grassanalysis.presentation.videos.tabs;
+package com.egrobots.grassanalysis.presentation.videos;
 
 import android.os.Bundle;
 

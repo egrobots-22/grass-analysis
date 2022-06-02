@@ -1,4 +1,4 @@
-package com.egrobots.grassanalysis.presentation;
+package com.egrobots.grassanalysis.presentation.start;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -8,8 +8,6 @@ import android.os.Bundle;
 import android.os.Handler;
 
 import com.egrobots.grassanalysis.R;
-import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosActivity;
-import com.egrobots.grassanalysis.presentation.videos.tabs.VideosTabActivity;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.google.firebase.messaging.FirebaseMessaging;
 

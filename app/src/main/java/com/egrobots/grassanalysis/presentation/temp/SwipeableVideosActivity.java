@@ -1,4 +1,4 @@
-package com.egrobots.grassanalysis.presentation.videos;
+package com.egrobots.grassanalysis.presentation.temp;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -6,8 +6,8 @@ import android.widget.Toast;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
-import com.egrobots.grassanalysis.data.model.VideoItem;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.presentation.videos.swipeablevideos.SwipeableVideosViewModel;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
 import java.util.ArrayList;

@@ -17,6 +17,6 @@
         android:layout_height="wrap_content"
         app:tabGravity="fill"
         app:tabTextColor="@color/white"
-        android:background="#90000000"/>
+        android:background="@color/transparent_black"/>
 
 </FrameLayout>

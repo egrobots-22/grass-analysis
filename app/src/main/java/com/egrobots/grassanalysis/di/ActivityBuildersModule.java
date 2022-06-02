@@ -3,10 +3,10 @@ package com.egrobots.grassanalysis.di;
 import com.egrobots.grassanalysis.di.recordscreen.RecordScreenViewModelModule;
 import com.egrobots.grassanalysis.di.recordscreen.SwipeableScreenViewModelModule;
 import com.egrobots.grassanalysis.di.tabview.VideosTabActivityViewModelModule;
-import com.egrobots.grassanalysis.presentation.SplashActivity;
+import com.egrobots.grassanalysis.presentation.start.SplashActivity;
 import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
-import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosActivity;
-import com.egrobots.grassanalysis.presentation.videos.tabs.VideosTabActivity;
+import com.egrobots.grassanalysis.presentation.temp.SwipeableVideosActivity;
+import com.egrobots.grassanalysis.presentation.videos.VideosTabActivity;
 
 import dagger.Module;
 import dagger.android.ContributesAndroidInjector;

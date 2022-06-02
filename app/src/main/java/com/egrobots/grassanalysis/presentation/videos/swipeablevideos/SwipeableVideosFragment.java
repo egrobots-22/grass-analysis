@@ -1,4 +1,4 @@
-package com.egrobots.grassanalysis.presentation.videos.tabs;
+package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -10,8 +10,7 @@ import android.widget.Toast;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
-import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosActivity;
-import com.egrobots.grassanalysis.presentation.videos.SwipeableVideosViewModel;
+import com.egrobots.grassanalysis.presentation.temp.SwipeableVideosActivity;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 

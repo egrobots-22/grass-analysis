@@ -108,7 +108,7 @@ public class RecordAudioImplementation implements VideosAdapter.AttachActivityLi
         StorageMetadata metadata = new StorageMetadata.Builder()
                 .setContentType("audio/mpeg")
                 .build();
-        Uri audioFile = Uri.fromFile(new File(recordFile.getPath()));
+        Uri audioFile = Uri.fromFile(recordFile);
         storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
             Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
             audioUrl.addOnCompleteListener(path -> {
@@ -117,9 +117,11 @@ public class RecordAudioImplementation implements VideosAdapter.AttachActivityLi
                     DatabaseReference audioRef = FirebaseDatabase.getInstance()
                             .getReference(Constants.QUESTIONS_NODE)
                             .child(getDeviceToken())
-                            .child(questionItem.getId());
+                            .child(questionItem.getId())
+                            .child(Constants.ANSWERS_NODE);
+                    String pushId = audioRef.push().getKey();
                     HashMap<String, Object> updates = new HashMap<>();
-                    updates.put("audioAnswerUri", url);
+                    updates.put(pushId, url);
                     audioRef.updateChildren(updates);
                 }
             });

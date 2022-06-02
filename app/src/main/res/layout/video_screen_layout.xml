@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:background="@android:color/black">
 
     <VideoView
@@ -52,39 +53,60 @@
 
     </LinearLayout>
 
-    <RelativeLayout
-        android:id="@+id/record_view_relative_layout"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_alignParentBottom="true"
-        android:layout_margin="16dp">
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true">
 
-        <com.devlomi.record_view.RecordButton
-            android:id="@+id/record_button"
-            android:layout_width="wrap_content"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/audioFilesRecyclerView"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_alignParentRight="true"
-            android:layout_alignParentBottom="true"
-            android:background="@drawable/recv_bg_mic"
-            android:scaleType="centerInside"
-            app:mic_icon="@drawable/recv_ic_mic_white"
-            app:send_icon="@drawable/recv_ic_send" />
+            android:background="@color/transparent_black"
+            app:layout_constrainedHeight="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHeight_max="200dp"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:listitem="@layout/play_audio_item_layout" />
 
-        <com.devlomi.record_view.RecordView
-            android:id="@+id/record_view"
+        <RelativeLayout
+            android:id="@+id/record_view_relative_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_toStartOf="@id/record_button"
-            app:cancel_text="CANCEL"
-            app:cancel_text_color="#ff0000"
-            app:cancel_text_margin_right="10dp"
-            app:counter_time_color="#ff0000"
-            app:slide_to_cancel_arrow="@drawable/recv_ic_arrow"
-            app:slide_to_cancel_arrow_color="#000000"
-            app:slide_to_cancel_bounds="10dp"
-            app:slide_to_cancel_margin_right="10dp"
-            app:slide_to_cancel_text="Slide To Cancel" />
-    </RelativeLayout>
+            android:layout_height="50dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="24dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:layout_editor_absoluteX="24dp">
+
+            <com.devlomi.record_view.RecordButton
+                android:id="@+id/record_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:background="@drawable/recv_bg_mic"
+                android:scaleType="centerInside"
+                app:mic_icon="@drawable/recv_ic_mic_white"
+                app:send_icon="@drawable/recv_ic_send" />
+
+            <com.devlomi.record_view.RecordView
+                android:id="@+id/record_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_toStartOf="@id/record_button"
+                app:cancel_text="CANCEL"
+                app:cancel_text_color="#ff0000"
+                app:cancel_text_margin_right="10dp"
+                app:counter_time_color="#ff0000"
+                app:slide_to_cancel_arrow="@drawable/recv_ic_arrow"
+                app:slide_to_cancel_arrow_color="#000000"
+                app:slide_to_cancel_bounds="10dp"
+                app:slide_to_cancel_margin_right="10dp"
+                app:slide_to_cancel_text="Slide To Cancel" />
+        </RelativeLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </RelativeLayout>
