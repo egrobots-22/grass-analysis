@@ -13,9 +13,6 @@
         <activity
             android:name=".presentation.videos.VideosTabActivity"
             android:theme="@style/FullScreen" />
-        <activity
-            android:name=".presentation.temp.SwipeableVideosActivity"
-            android:theme="@style/FullScreen" />
         <activity android:name=".presentation.temp.RecordScreenActivity2" />
         <activity android:name=".presentation.recordscreen.RecordScreenActivity" />
         <activity android:name=".presentation.start.StartActivity" />

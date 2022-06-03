@@ -41,4 +41,7 @@ public class DatabaseRepository {
         return firebaseDataSource.uploadRecordedAudio(recordFile, questionItem);
     }
 
+    public Flowable<String> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
+        return firebaseDataSource.getRecordedAudiosForQuestion(questionItem);
+    }
 }

@@ -7,6 +7,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.data.DatabaseRepository;
+import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.utils.AudioPlayer;
 
 import java.util.ArrayList;
@@ -17,9 +19,20 @@ import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewHolder> {
     private List<String> audioUris = new ArrayList<>();
+    private DatabaseRepository databaseRepository;
+    private CompositeDisposable disposable = new CompositeDisposable();
+
+    public AudioAdapters(DatabaseRepository databaseRepository) {
+        this.databaseRepository = databaseRepository;
+    }
 
     @NonNull
     @Override
@@ -45,6 +58,34 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         notifyDataSetChanged();
     }
 
+    public void retrieveAudios(VideoQuestionItem questionItem) {
+        databaseRepository.getRecordedAudiosForQuestion(questionItem)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .toObservable()
+                .subscribe(new Observer<String>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        disposable.add(d);
+                    }
+
+                    @Override
+                    public void onNext(String audioUri) {
+                        addNewAudio(audioUri);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+    }
+
     static class AudioViewHolder extends RecyclerView.ViewHolder implements AudioPlayer.AudioPlayCallback {
         @BindView(R.id.playButton)
         ImageButton playButton;
@@ -59,6 +100,10 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             ButterKnife.bind(this, itemView);
         }
 
+        private void setAudioUri(String audioUri) {
+            audioPlayer = new AudioPlayer(audioUri, this);
+        }
+
         @OnClick(R.id.pauseButton)
         public void onPauseClicked() {
             playButton.setVisibility(View.VISIBLE);
@@ -71,10 +116,6 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             pauseButton.setVisibility(View.VISIBLE);
             playButton.setVisibility(View.GONE);
             audioPlayer.playAudio();
-        }
-
-        private void setAudioUri(String audioUri) {
-            audioPlayer = new AudioPlayer(audioUri, this);
         }
 
         @Override

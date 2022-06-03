@@ -267,4 +267,46 @@ public class FirebaseDataSource {
             }
         });
     }
+
+    public Flowable<String> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
+        return Flowable.create(new FlowableOnSubscribe<String>() {
+            @Override
+            public void subscribe(FlowableEmitter<String> emitter) throws Exception {
+                DatabaseReference databaseReference = FirebaseDatabase.getInstance()
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .child(questionItem.getDeviceToken())
+                        .child(questionItem.getId())
+                        .child(Constants.ANSWERS_NODE);
+                databaseReference.addChildEventListener(new ChildEventListener() {
+                    @Override
+                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                        if (snapshot.exists()) {
+                            String audioAnswerUri = (String) snapshot.getValue();
+                            emitter.onNext(audioAnswerUri);
+                        }
+                    }
+
+                    @Override
+                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+                    }
+
+                    @Override
+                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
+            }
+        }, BackpressureStrategy.BUFFER);
+    }
 }

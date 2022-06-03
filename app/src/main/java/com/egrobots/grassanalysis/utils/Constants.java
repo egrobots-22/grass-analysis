@@ -9,6 +9,6 @@ public class Constants {
     public static final String QUESTIONS_NODE = "questions";
     public static final String IS_CURRENT_USER = "is_current_user";
     public static final String AUDIO_PATH = "Answers/Recording/";
-    public static final String AUDIO_FILE_TYPE = ".3gp";
+    public static final String AUDIO_FILE_TYPE = ".mp3";
     public static final String ANSWERS_NODE = "answers";
 }

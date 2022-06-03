@@ -13,7 +13,6 @@ import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
-import com.egrobots.grassanalysis.presentation.temp.SwipeableVideosActivity;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.StateResource;
@@ -42,14 +41,16 @@ import static androidx.core.content.PermissionChecker.PERMISSION_GRANTED;
  * create an instance of this fragment.
  */
 public class SwipeableVideosFragment extends DaggerFragment implements RecordAudioImpl.RecordAudioCallback {
-    private static final String TAG = SwipeableVideosActivity.class.getSimpleName();
+    private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
 
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
     @Inject
     ViewModelProviderFactory providerFactory;
-    private VideosAdapter videosAdapter = new VideosAdapter(this);
+    @Inject
+    VideosAdapter videosAdapter;
+
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
 
@@ -74,25 +75,12 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == AUDIO_REQUEST_PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(getActivity(), "Audio Permission Granted", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(getActivity(), "Audio Permission Denied", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_swipeably_videso, container, false);
         ButterKnife.bind(this, view);
+
+        videosAdapter.setRecordAudioCallback(this);
         viewPagerVideos.setAdapter(videosAdapter);
-        setupAudiosRecyclerView();
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
         observeVideosUris();
         observeUploadingRecordedAudio();
@@ -102,10 +90,6 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
             swipeableVideosViewModel.getOtherUsersVideos();
         }
         return view;
-    }
-
-    private void setupAudiosRecyclerView() {
-
     }
 
     private void observeUploadingRecordedAudio() {
@@ -136,6 +120,26 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     }
 
     @Override
+    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
+        swipeableVideosViewModel.uploadRecordedAudio(recordFile, questionItem);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == AUDIO_REQUEST_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(getActivity(), "Audio Permission Granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getActivity(), "Audio Permission Denied", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+
+    @Override
     public void requestAudioPermission(RecordView recordView) {
         recordView.setRecordPermissionHandler(() -> {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
@@ -150,8 +154,4 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
         });
     }
 
-    @Override
-    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
-        swipeableVideosViewModel.uploadRecordedAudio(recordFile, questionItem);
-    }
 }
