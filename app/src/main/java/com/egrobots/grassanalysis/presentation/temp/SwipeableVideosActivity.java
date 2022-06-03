@@ -47,7 +47,7 @@ public class SwipeableVideosActivity extends DaggerAppCompatActivity implements 
 
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
         swipeableVideosViewModel.getAllVideos();
-        videosAdapter = new VideosAdapter( this, this);
+        videosAdapter = new VideosAdapter( this);
         viewPagerVideos.setAdapter(videosAdapter);
         observeVideosUris();
     }

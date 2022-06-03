@@ -2,7 +2,6 @@ package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
 import android.net.Uri;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.LocalDataRepository;
@@ -27,6 +26,7 @@ import javax.inject.Inject;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.ViewModel;
+import io.reactivex.CompletableObserver;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -131,44 +131,26 @@ public class SwipeableVideosViewModel extends ViewModel {
     }
 
     public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
-        uploadAudioState.setValue(StateResource.loading());
-        StorageReference storageReference = FirebaseStorage.getInstance().getReference("Answers/Recording/" + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
-        StorageMetadata metadata = new StorageMetadata.Builder()
-                .setContentType("audio/mpeg")
-                .build();
-        Uri audioFile = Uri.fromFile(recordFile);
-        storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
-            Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
-            audioUrl.addOnCompleteListener(path -> {
-                if (path.isSuccessful()) {
-                    String url = path.getResult().toString();
-                    DatabaseReference audioRef = FirebaseDatabase.getInstance()
-                            .getReference(Constants.QUESTIONS_NODE)
-                            .child(questionItem.getDeviceToken())
-                            .child(questionItem.getId())
-                            .child(Constants.ANSWERS_NODE);
-                    String pushId = audioRef.push().getKey();
-                    HashMap<String, Object> updates = new HashMap<>();
-                    updates.put(pushId, url);
-                    audioRef.updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
-                        @Override
-                        public void onComplete(@NonNull Task<Void> task) {
-                            if (task.isSuccessful()) {
-                                uploadAudioState.setValue(StateResource.success());
-                            } else {
-                                uploadAudioState.setValue(StateResource.error("خطأ اثناء تحميل التسجيل"));
-                            }
-                        }
-                    });
-                }
-            });
-        }).addOnFailureListener(new OnFailureListener() {
-            @Override
-            public void onFailure(@NonNull Exception e) {
-                uploadAudioState.setValue(StateResource.error("خطأ اثناء تحميل التسجيل"));
-                Log.e("Error", "onFailure: " + e.getMessage());
-            }
-        });
+        databaseRepository.uploadRecordedAudio(recordFile, questionItem)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new CompletableObserver() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        disposable.add(d);
+                        uploadAudioState.setValue(StateResource.loading());
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        uploadAudioState.setValue(StateResource.success());
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        uploadAudioState.setValue(StateResource.error(Objects.requireNonNull(e.getMessage())));
+                    }
+                });
     }
 
     public MediatorLiveData<VideoQuestionItem> observeVideoUris() {

@@ -62,50 +62,6 @@ public class RecordAudioImpl {
         recordAudioCallback.requestAudioPermission(recordView);
     }
 
-    @SuppressLint("DefaultLocale")
-    private String getHumanTimeText(long milliseconds) {
-        return String.format("%02d:%02d",
-                TimeUnit.MILLISECONDS.toMinutes(milliseconds),
-                TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
-                        TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)));
-    }
-
-//    private void sendRecordedFile() {
-//        StorageReference storageReference = FirebaseStorage.getInstance().getReference("Answers/Recording/" + System.currentTimeMillis() + FILE_TYPE);
-//        StorageMetadata metadata = new StorageMetadata.Builder()
-//                .setContentType("audio/mpeg")
-//                .build();
-//        Uri audioFile = Uri.fromFile(recordFile);
-//        storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
-//            Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
-//            audioUrl.addOnCompleteListener(path -> {
-//                if (path.isSuccessful()) {
-//                    String url = path.getResult().toString();
-//                    DatabaseReference audioRef = FirebaseDatabase.getInstance()
-//                            .getReference(Constants.QUESTIONS_NODE)
-//                            .child(getDeviceToken())
-//                            .child(questionItem.getId())
-//                            .child(Constants.ANSWERS_NODE);
-//                    String pushId = audioRef.push().getKey();
-//                    HashMap<String, Object> updates = new HashMap<>();
-//                    updates.put(pushId, url);
-//                    audioRef.updateChildren(updates);
-//                }
-//            });
-//        }).addOnFailureListener(new OnFailureListener() {
-//            @Override
-//            public void onFailure(@NonNull Exception e) {
-//                Toast.makeText(activity, "حدث خطأ اثناء التحميل", Toast.LENGTH_SHORT).show();
-//                Log.e("Error", "onFailure: " + e.getMessage());
-//            }
-//        });
-//    }
-//
-//    private String getDeviceToken() {
-//        SharedPreferences sharedPreferences = activity.getSharedPreferences(Constants.PREF_NAME, Context.MODE_PRIVATE);
-//        return sharedPreferences.getString(Constants.DEVICE_TOKEN, null);
-//    }
-
     class OnRecordListenerInstance implements OnRecordListener {
 
         @Override
@@ -126,11 +82,6 @@ public class RecordAudioImpl {
         public void onFinish(long recordTime, boolean limitReached) {
             stopRecording(false);
             recordAudioCallback.uploadRecordedAudio(recordFile, questionItem);
-//            sendRecordedFile();
-//            String time = getHumanTimeText(recordTime);
-//            String path = recordFile.getPath();
-//            Log.d("Recorded File Path", path);
-//            Toast.makeText(activity, "تم تسجيل اجابتك بنجاح..", Toast.LENGTH_SHORT).show();
         }
 
         @Override

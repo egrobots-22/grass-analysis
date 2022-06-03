@@ -37,10 +37,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
     private List<VideoQuestionItem> videoQuestionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
-    private Activity activity;
 
-    public VideosAdapter(Activity activity, RecordAudioImpl.RecordAudioCallback recordAudioCallback) {
-        this.activity = activity;
+    public VideosAdapter(RecordAudioImpl.RecordAudioCallback recordAudioCallback) {
         this.recordAudioCallback = recordAudioCallback;
     }
 
@@ -94,7 +92,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
         public void setRecordedAudios(VideoQuestionItem questionItem) {
             RecordAudioImpl recordAudioImpl = new RecordAudioImpl(recordView, recordButton, questionItem, recordAudioCallback);
-            recordAudioImpl.setupRecordAudio(activity.getExternalFilesDir(null), UUID.randomUUID().toString() + FILE_TYPE);
+            recordAudioImpl.setupRecordAudio(itemView.getContext().getExternalFilesDir(null), UUID.randomUUID().toString() + FILE_TYPE);
             setupAudioFilesRecyclerView(questionItem);
         }
 
@@ -140,7 +138,6 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 }
             });
         }
-
 
         @Override
         public void onPrepare() {

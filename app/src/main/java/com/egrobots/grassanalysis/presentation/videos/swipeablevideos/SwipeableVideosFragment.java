@@ -49,7 +49,7 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     ViewPager2 viewPagerVideos;
     @Inject
     ViewModelProviderFactory providerFactory;
-    private VideosAdapter videosAdapter;
+    private VideosAdapter videosAdapter = new VideosAdapter(this);
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
 
@@ -91,17 +91,21 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_swipeably_videso, container, false);
         ButterKnife.bind(this, view);
-        swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
-        videosAdapter = new VideosAdapter(getActivity(), this);
         viewPagerVideos.setAdapter(videosAdapter);
+        setupAudiosRecyclerView();
+        swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
+        observeVideosUris();
+        observeUploadingRecordedAudio();
         if (isCurrentUser) {
             swipeableVideosViewModel.getCurrentUserVideos();
         } else {
             swipeableVideosViewModel.getOtherUsersVideos();
         }
-        observeVideosUris();
-        observeUploadingRecordedAudio();
         return view;
+    }
+
+    private void setupAudiosRecyclerView() {
+
     }
 
     private void observeUploadingRecordedAudio() {

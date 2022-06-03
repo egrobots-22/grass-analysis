@@ -6,6 +6,7 @@ import android.widget.Toast;
 
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.StateResource;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -220,58 +221,49 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Completable saveAudio(File recordFile, String questionId, String deviceToken) {
+    public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
         return Completable.create(new CompletableOnSubscribe() {
             @Override
             public void subscribe(CompletableEmitter emitter) throws Exception {
-                StorageReference reference = storageReference
-                        .child(Constants.AUDIO_PATH + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
+                StorageReference storageReference = FirebaseStorage.getInstance().getReference(Constants.AUDIO_PATH + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
                 StorageMetadata metadata = new StorageMetadata.Builder()
                         .setContentType("audio/mpeg")
                         .build();
                 Uri audioFile = Uri.fromFile(recordFile);
-                UploadTask uploadTask = reference.putFile(audioFile, metadata);
-                uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-                    @Override
-                    public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                        if (!task.isSuccessful()) {
-                            emitter.onError(task.getException());
-                        }
-                        reference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Uri> task) {
-                                if (task.isSuccessful()) {
-                                    String downloadUrl = task.getResult().toString();
-                                    DatabaseReference audioRef = firebaseDatabase
-                                            .getReference(Constants.QUESTIONS_NODE)
-                                            .child(deviceToken)
-                                            .child(questionId)
-                                            .child(Constants.ANSWERS_NODE);
-                                    String pushId = audioRef.push().getKey();
-                                    HashMap<String, Object> updates = new HashMap<>();
-                                    updates.put(pushId, downloadUrl);
-                                    audioRef.updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
-                                        @Override
-                                        public void onComplete(@NonNull Task<Void> task) {
-                                            if (task.isSuccessful()) {
-                                                emitter.onComplete();
-                                            } else {
-                                                emitter.onError(task.getException());
-                                            }
-                                        }
-                                    });
+                storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
+                    Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
+                    audioUrl.addOnCompleteListener(path -> {
+                        if (path.isSuccessful()) {
+                            String url = path.getResult().toString();
+                            DatabaseReference audioRef = FirebaseDatabase.getInstance()
+                                    .getReference(Constants.QUESTIONS_NODE)
+                                    .child(questionItem.getDeviceToken())
+                                    .child(questionItem.getId())
+                                    .child(Constants.ANSWERS_NODE);
+                            String pushId = audioRef.push().getKey();
+                            HashMap<String, Object> updates = new HashMap<>();
+                            updates.put(pushId, url);
+                            audioRef.updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if (task.isSuccessful()) {
+                                        emitter.onComplete();
+                                    } else {
+                                        emitter.onError(new Throwable("خطأ اثناء تحميل التسجيل"));
+
+                                    }
                                 }
-                            }
-                        });
-                        return reference.getDownloadUrl();
-                    }
+                            });
+                        }
+                    });
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        emitter.onError(e);
+                        emitter.onError(new Throwable("خطأ اثناء تحميل التسجيل"));
                         Log.e("Error", "onFailure: " + e.getMessage());
                     }
                 });
+
             }
         });
     }

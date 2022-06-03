@@ -37,8 +37,8 @@ public class DatabaseRepository {
         return firebaseDataSource.getOtherUsersVideos(deviceToken);
     }
 
-    public Completable saveAudio(File recordFile, String questionId, String deviceToken) {
-        return firebaseDataSource.saveAudio(recordFile, questionId, deviceToken);
+    public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
+        return firebaseDataSource.uploadRecordedAudio(recordFile, questionItem);
     }
 
 }
