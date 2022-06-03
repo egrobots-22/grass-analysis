@@ -1,29 +1,29 @@
 package com.egrobots.grassanalysis.adapters;
 
 import android.app.Activity;
-import android.media.MediaPlayer;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.managers.VideoManager;
 import com.egrobots.grassanalysis.utils.Constants;
-import com.egrobots.grassanalysis.utils.RecordAudioImplementation;
+import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -33,12 +33,15 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewHolder> {
-    private List<VideoQuestionItem> videoQuestionItems;
+    private static final String FILE_TYPE = ".mp3";
+
+    private List<VideoQuestionItem> videoQuestionItems = new ArrayList<>();
+    private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private Activity activity;
 
-    public VideosAdapter(Activity activity, List<VideoQuestionItem> videoQuestionItems) {
+    public VideosAdapter(Activity activity, RecordAudioImpl.RecordAudioCallback recordAudioCallback) {
         this.activity = activity;
-        this.videoQuestionItems = videoQuestionItems;
+        this.recordAudioCallback = recordAudioCallback;
     }
 
     @NonNull
@@ -52,13 +55,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public void onBindViewHolder(@NonNull VideoViewHolder holder, int position) {
         VideoQuestionItem questionItem = videoQuestionItems.get(position);
         holder.setVideoData(questionItem.getVideoQuestionUri());
-        RecordAudioImplementation recordAudioImplementation =
-                new RecordAudioImplementation(holder.recordView, holder.recordButton, questionItem);
-        recordAudioImplementation.attachActivity(activity);
-        recordAudioImplementation.setupRecordAudio();
-
         //get audio files for current video question
-        holder.setupAudioFilesRecyclerView(questionItem);
+        holder.setRecordedAudios(questionItem);
     }
 
     @Override
@@ -66,7 +64,13 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         return videoQuestionItems.size();
     }
 
-    class VideoViewHolder extends RecyclerView.ViewHolder {
+    public void addNewVideo(VideoQuestionItem videoQuestionItem) {
+        videoQuestionItems.add(videoQuestionItem);
+        notifyDataSetChanged();
+    }
+
+
+    class VideoViewHolder extends RecyclerView.ViewHolder implements VideoManager.VideoManagerCallback {
         @BindView(R.id.videoView)
         VideoView videoView;
         @BindView(R.id.record_view)
@@ -83,15 +87,22 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             ButterKnife.bind(this, itemView);
         }
 
+        void setVideoData(String videoUri) {
+            VideoManager videoManager = new VideoManager(videoView, this);
+            videoManager.setVideoData(videoUri);
+        }
+
+        public void setRecordedAudios(VideoQuestionItem questionItem) {
+            RecordAudioImpl recordAudioImpl = new RecordAudioImpl(recordView, recordButton, questionItem, recordAudioCallback);
+            recordAudioImpl.setupRecordAudio(activity.getExternalFilesDir(null), UUID.randomUUID().toString() + FILE_TYPE);
+            setupAudioFilesRecyclerView(questionItem);
+        }
+
         private void setupAudioFilesRecyclerView(VideoQuestionItem questionItem) {
-            List<String> audioUris = new ArrayList<>();
-//            audioUris.add("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-//            audioUris.add("https://firebasestorage.googleapis.com/v0/b/grass-analysis.appspot.com/o/Answers%2FRecording%2F1654123501556.mp3?alt=media&token=6f78df64-488d-4451-8617-a7a1c4801b32");
-//            audioUris.add("https://firebasestorage.googleapis.com/v0/b/grass-analysis.appspot.com/o/Answers%2FRecording%2F1654122490262.mp3?alt=media&token=1699a6bd-1e41-4c27-aa43-05888e3f1a10");
-            AudioAdapters audioAdapters = new AudioAdapters(audioUris);
+            AudioAdapters audioAdapters = new AudioAdapters();
             audioFilesRecyclerView.setAdapter(audioAdapters);
             audioFilesRecyclerView.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
-//            VideoQuestionItem questionItem = videoQuestionItems.get(getAdapterPosition());
+
             DatabaseReference databaseReference = FirebaseDatabase.getInstance()
                     .getReference(Constants.QUESTIONS_NODE)
                     .child(questionItem.getDeviceToken())
@@ -101,13 +112,9 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 @Override
                 public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                     if (snapshot.exists()) {
-//                        for (DataSnapshot answerSnapshot : snapshot.getChildren()) {
                         String audioAnswerUri = (String) snapshot.getValue();
-                        audioUris.add(audioAnswerUri);
-                        audioAdapters.notifyDataSetChanged();
-//                        }
-                    }
-                    if (audioUris.isEmpty()) {
+                        audioAdapters.addNewAudio(audioAnswerUri);
+                    } else {
                         audioFilesRecyclerView.setVisibility(View.GONE);
                     }
                 }
@@ -134,39 +141,16 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             });
         }
 
-        void setVideoData(String videoUri) {
-            videoView.setVideoPath(videoUri);
-            videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                @Override
-                public void onPrepared(MediaPlayer mp) {
-                    progressBar.setVisibility(View.GONE);
-                    mp.setVolume(0f, 0f);
-                    mp.start();
 
-                    float videoRatio = mp.getVideoWidth() / (float) mp.getVideoHeight();
-                    float screenRatio = videoView.getWidth() / (float) videoView.getHeight();
-                    float scale = videoRatio / screenRatio;
-                    if (scale >= 1f) {
-                        videoView.setScaleX(scale);
-                    } else {
-                        videoView.setScaleY(1f / scale);
-                    }
-                }
-            });
-            videoView.setOnCompletionListener(mp -> mp.start());
-            videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-                @Override
-                public boolean onError(MediaPlayer mp, int what, int extra) {
-                    Log.e("Error", "onError: ");
-                    return false;
-                }
-            });
+        @Override
+        public void onPrepare() {
+            progressBar.setVisibility(View.GONE);
         }
 
-    }
-
-    public interface AttachActivityListener {
-        void attachActivity(Activity activity);
+        @Override
+        public void onError(String msg) {
+            Toast.makeText(itemView.getContext(), msg, Toast.LENGTH_SHORT).show();
+        }
     }
 
 }

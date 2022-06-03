@@ -1,21 +1,26 @@
 package com.egrobots.grassanalysis.presentation.temp;
 
+import android.Manifest;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
+import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.presentation.videos.swipeablevideos.SwipeableVideosViewModel;
+import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
 
 import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
@@ -23,13 +28,14 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import dagger.android.support.DaggerAppCompatActivity;
 
-public class SwipeableVideosActivity extends DaggerAppCompatActivity {
+import static androidx.core.content.PermissionChecker.PERMISSION_GRANTED;
+
+public class SwipeableVideosActivity extends DaggerAppCompatActivity implements RecordAudioImpl.RecordAudioCallback {
     private static final String TAG = SwipeableVideosActivity.class.getSimpleName();
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
     @Inject
     ViewModelProviderFactory providerFactory;
-    private List<VideoQuestionItem> videoItems = new ArrayList<>();
     private VideosAdapter videosAdapter;
     private SwipeableVideosViewModel swipeableVideosViewModel;
 
@@ -41,7 +47,7 @@ public class SwipeableVideosActivity extends DaggerAppCompatActivity {
 
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
         swipeableVideosViewModel.getAllVideos();
-        videosAdapter = new VideosAdapter( this, videoItems);
+        videosAdapter = new VideosAdapter( this, this);
         viewPagerVideos.setAdapter(videosAdapter);
         observeVideosUris();
     }
@@ -50,8 +56,7 @@ public class SwipeableVideosActivity extends DaggerAppCompatActivity {
         swipeableVideosViewModel.observeVideoUris().observe(this, new Observer<VideoQuestionItem>() {
             @Override
             public void onChanged(VideoQuestionItem videoQuestionItem) {
-                videoItems.add(videoQuestionItem);
-                videosAdapter.notifyDataSetChanged();
+                videosAdapter.addNewVideo(videoQuestionItem);
             }
         });
     }
@@ -68,5 +73,25 @@ public class SwipeableVideosActivity extends DaggerAppCompatActivity {
                 Toast.makeText(this, "Audio Permission Denied", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public void requestAudioPermission(RecordView recordView) {
+        recordView.setRecordPermissionHandler(() -> {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                return true;
+            }
+            boolean recordPermissionAvailable = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PERMISSION_GRANTED;
+            if (recordPermissionAvailable) {
+                return true;
+            }
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, 0);
+            return false;
+        });
+    }
+
+    @Override
+    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
+
     }
 }

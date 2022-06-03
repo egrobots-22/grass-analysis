@@ -1,25 +1,31 @@
 package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
+import android.Manifest;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.presentation.temp.SwipeableVideosActivity;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.RecordAudioImpl;
+import com.egrobots.grassanalysis.utils.StateResource;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.File;
 
 import javax.inject.Inject;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -28,19 +34,21 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import dagger.android.support.DaggerFragment;
 
+import static androidx.core.content.PermissionChecker.PERMISSION_GRANTED;
+
 /**
  * A simple {@link Fragment} subclass.
  * Use the {@link SwipeableVideosFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class SwipeableVideosFragment extends DaggerFragment {
-
+public class SwipeableVideosFragment extends DaggerFragment implements RecordAudioImpl.RecordAudioCallback {
     private static final String TAG = SwipeableVideosActivity.class.getSimpleName();
+    private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
+
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
     @Inject
     ViewModelProviderFactory providerFactory;
-    private List<VideoQuestionItem> videoItems = new ArrayList<>();
     private VideosAdapter videosAdapter;
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
@@ -65,22 +73,12 @@ public class SwipeableVideosFragment extends DaggerFragment {
         }
     }
 
-    private void observeVideosUris() {
-        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), new Observer<VideoQuestionItem>() {
-            @Override
-            public void onChanged(VideoQuestionItem videoQuestionItem) {
-                videoItems.add(videoQuestionItem);
-                videosAdapter.notifyDataSetChanged();
-            }
-        });
-    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == 0) {
+        if (requestCode == AUDIO_REQUEST_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(getActivity(), "Audio Permission Granted", Toast.LENGTH_SHORT).show();
             } else {
@@ -94,14 +92,62 @@ public class SwipeableVideosFragment extends DaggerFragment {
         View view = inflater.inflate(R.layout.fragment_swipeably_videso, container, false);
         ButterKnife.bind(this, view);
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
+        videosAdapter = new VideosAdapter(getActivity(), this);
+        viewPagerVideos.setAdapter(videosAdapter);
         if (isCurrentUser) {
             swipeableVideosViewModel.getCurrentUserVideos();
         } else {
             swipeableVideosViewModel.getOtherUsersVideos();
         }
-        videosAdapter = new VideosAdapter(getActivity(), videoItems);
-        viewPagerVideos.setAdapter(videosAdapter);
         observeVideosUris();
+        observeUploadingRecordedAudio();
         return view;
+    }
+
+    private void observeUploadingRecordedAudio() {
+        swipeableVideosViewModel.observeUploadAudioState().observe(getViewLifecycleOwner(), new Observer<StateResource>() {
+            @Override
+            public void onChanged(StateResource stateResource) {
+                switch (stateResource.status) {
+                    case SUCCESS:
+                        Toast.makeText(getContext(), "تم تسجيل اجابتك بنجاح", Toast.LENGTH_SHORT).show();
+                    case LOADING:
+                        Toast.makeText(getContext(), "جاري تحميل التسجيل", Toast.LENGTH_SHORT).show();
+                        break;
+                    case ERROR:
+                        Toast.makeText(getContext(), stateResource.message, Toast.LENGTH_SHORT).show();
+                        break;
+                }
+            }
+        });
+    }
+
+    private void observeVideosUris() {
+        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), new Observer<VideoQuestionItem>() {
+            @Override
+            public void onChanged(VideoQuestionItem videoQuestionItem) {
+                videosAdapter.addNewVideo(videoQuestionItem);
+            }
+        });
+    }
+
+    @Override
+    public void requestAudioPermission(RecordView recordView) {
+        recordView.setRecordPermissionHandler(() -> {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                return true;
+            }
+            boolean recordPermissionAvailable = ContextCompat.checkSelfPermission(requireActivity(), Manifest.permission.RECORD_AUDIO) == PERMISSION_GRANTED;
+            if (recordPermissionAvailable) {
+                return true;
+            }
+            ActivityCompat.requestPermissions(requireActivity(), new String[]{Manifest.permission.RECORD_AUDIO}, AUDIO_REQUEST_PERMISSION_CODE);
+            return false;
+        });
+    }
+
+    @Override
+    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
+        swipeableVideosViewModel.uploadRecordedAudio(recordFile, questionItem);
     }
 }

@@ -1,11 +1,30 @@
 package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
+import android.net.Uri;
+import android.util.Log;
+import android.widget.Toast;
+
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.LocalDataRepository;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.StateResource;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageMetadata;
+import com.google.firebase.storage.StorageReference;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
+import androidx.annotation.NonNull;
 import androidx.lifecycle.MediatorLiveData;
 import androidx.lifecycle.ViewModel;
 import io.reactivex.Observer;
@@ -19,6 +38,7 @@ public class SwipeableVideosViewModel extends ViewModel {
     private LocalDataRepository localDataRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
     private MediatorLiveData<VideoQuestionItem> videoUris = new MediatorLiveData<>();
+    private MediatorLiveData<StateResource> uploadAudioState = new MediatorLiveData<>();
 
     @Inject
     public SwipeableVideosViewModel(DatabaseRepository databaseRepository, LocalDataRepository localDataRepository) {
@@ -110,7 +130,52 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
+    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
+        uploadAudioState.setValue(StateResource.loading());
+        StorageReference storageReference = FirebaseStorage.getInstance().getReference("Answers/Recording/" + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
+        StorageMetadata metadata = new StorageMetadata.Builder()
+                .setContentType("audio/mpeg")
+                .build();
+        Uri audioFile = Uri.fromFile(recordFile);
+        storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
+            Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
+            audioUrl.addOnCompleteListener(path -> {
+                if (path.isSuccessful()) {
+                    String url = path.getResult().toString();
+                    DatabaseReference audioRef = FirebaseDatabase.getInstance()
+                            .getReference(Constants.QUESTIONS_NODE)
+                            .child(questionItem.getDeviceToken())
+                            .child(questionItem.getId())
+                            .child(Constants.ANSWERS_NODE);
+                    String pushId = audioRef.push().getKey();
+                    HashMap<String, Object> updates = new HashMap<>();
+                    updates.put(pushId, url);
+                    audioRef.updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if (task.isSuccessful()) {
+                                uploadAudioState.setValue(StateResource.success());
+                            } else {
+                                uploadAudioState.setValue(StateResource.error("خطأ اثناء تحميل التسجيل"));
+                            }
+                        }
+                    });
+                }
+            });
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                uploadAudioState.setValue(StateResource.error("خطأ اثناء تحميل التسجيل"));
+                Log.e("Error", "onFailure: " + e.getMessage());
+            }
+        });
+    }
+
     public MediatorLiveData<VideoQuestionItem> observeVideoUris() {
         return videoUris;
+    }
+
+    public MediatorLiveData<StateResource> observeUploadAudioState() {
+        return uploadAudioState;
     }
 }

@@ -9,6 +9,7 @@ import android.widget.TextView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.utils.AudioPlayer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -18,11 +19,7 @@ import butterknife.ButterKnife;
 import butterknife.OnClick;
 
 public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewHolder> {
-    private List<String> audioUris;
-
-    public AudioAdapters(List<String> audioUris) {
-        this.audioUris = audioUris;
-    }
+    private List<String> audioUris = new ArrayList<>();
 
     @NonNull
     @Override
@@ -43,7 +40,12 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         return audioUris.size();
     }
 
-    class AudioViewHolder extends RecyclerView.ViewHolder implements AudioPlayer.AudioPlayCallback {
+    public void addNewAudio(String audioUri) {
+        audioUris.add(audioUri);
+        notifyDataSetChanged();
+    }
+
+    static class AudioViewHolder extends RecyclerView.ViewHolder implements AudioPlayer.AudioPlayCallback {
         @BindView(R.id.playButton)
         ImageButton playButton;
         @BindView(R.id.pauseButton)
