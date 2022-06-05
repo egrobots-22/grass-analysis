@@ -38,6 +38,7 @@ public class CameraXRecorder {
     private Recording recording;
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private CameraXCallback cameraXCallback;
+    private ProcessCameraProvider cameraProvider;
 
     public CameraXRecorder(Context context, PreviewView previewView, CameraXCallback cameraXCallback) {
         this.context = context;
@@ -53,8 +54,8 @@ public class CameraXRecorder {
         cameraProviderFuture = ProcessCameraProvider.getInstance(context);
         cameraProviderFuture.addListener(() -> {
             try {
-                ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
-                startCameraX(cameraProvider);
+                cameraProvider = cameraProviderFuture.get();
+                startCameraX();
             } catch (ExecutionException | InterruptedException e) {
                 e.printStackTrace();
             }
@@ -62,7 +63,7 @@ public class CameraXRecorder {
     }
 
     @SuppressLint("RestrictedApi")
-    private void startCameraX(ProcessCameraProvider cameraProvider) {
+    private void startCameraX() {
         cameraProvider.unbindAll();
         CameraSelector cameraSelector = new CameraSelector.Builder()
                 .requireLensFacing(CameraSelector.LENS_FACING_BACK)
@@ -92,6 +93,7 @@ public class CameraXRecorder {
             if (curRecording != null) {
                 curRecording.stop();
                 recording = null;
+                cameraProvider.unbindAll();
                 return;
             }
 

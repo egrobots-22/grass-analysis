@@ -63,7 +63,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     }
 
     public void addNewVideo(VideoQuestionItem videoQuestionItem) {
-        videoQuestionItems.add(videoQuestionItem);
+        videoQuestionItems.add(0, videoQuestionItem);
         notifyDataSetChanged();
     }
 

@@ -38,6 +38,7 @@ public class SwipeableVideosViewModel extends ViewModel {
     private LocalDataRepository localDataRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
     private MediatorLiveData<VideoQuestionItem> videoUris = new MediatorLiveData<>();
+    private MediatorLiveData<Boolean> existVideosState = new MediatorLiveData<>();
     private MediatorLiveData<StateResource> uploadAudioState = new MediatorLiveData<>();
 
     @Inject
@@ -83,16 +84,20 @@ public class SwipeableVideosViewModel extends ViewModel {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
+                        existVideosState.setValue(true);
                     }
 
                     @Override
                     public void onNext(VideoQuestionItem questionItem) {
-                        videoUris.setValue(questionItem);
+                        if (questionItem.getId() == null) {
+                            existVideosState.setValue(false);
+                        } else {
+                            videoUris.setValue(questionItem);
+                        }
                     }
 
                     @Override
                     public void onError(Throwable e) {
-
                     }
 
                     @Override
@@ -111,16 +116,20 @@ public class SwipeableVideosViewModel extends ViewModel {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
+                        existVideosState.setValue(true);
                     }
 
                     @Override
                     public void onNext(VideoQuestionItem questionItem) {
-                        videoUris.setValue(questionItem);
+                        if (questionItem.getId() == null) {
+                            existVideosState.setValue(false);
+                        } else {
+                            videoUris.setValue(questionItem);
+                        }
                     }
 
                     @Override
                     public void onError(Throwable e) {
-
                     }
 
                     @Override
@@ -159,5 +168,9 @@ public class SwipeableVideosViewModel extends ViewModel {
 
     public MediatorLiveData<StateResource> observeUploadAudioState() {
         return uploadAudioState;
+    }
+
+    public MediatorLiveData<Boolean> observeExistVideosState() {
+        return existVideosState;
     }
 }

@@ -2,11 +2,9 @@ package com.egrobots.grassanalysis.datasource.remote;
 
 import android.net.Uri;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.utils.Constants;
-import com.egrobots.grassanalysis.utils.StateResource;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -16,6 +14,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageMetadata;
@@ -141,18 +140,30 @@ public class FirebaseDataSource {
         return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
             @Override
             public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
-                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
+                final DatabaseReference videosRef = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .child(deviceToken);
+                //check firstly if there is data exists
+                videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (!snapshot.exists() || !snapshot.hasChildren()) {
+                            emitter.onNext(new VideoQuestionItem());
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
                 videosRef.addChildEventListener(new ChildEventListener() {
                     @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                        if (deviceToken.equals(snapshot.getKey())) {
-                            for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
-                                VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
-                                videoQuestionItem.setId(questionSnapshot.getKey());
-                                videoQuestionItem.setDeviceToken(deviceToken);
-                                emitter.onNext(videoQuestionItem);
-                            }
-                        }
+                    public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
+                        VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
+                        videoQuestionItem.setId(questionSnapshot.getKey());
+                        videoQuestionItem.setDeviceToken(deviceToken);
+                        emitter.onNext(videoQuestionItem);
                     }
 
                     @Override
@@ -184,6 +195,31 @@ public class FirebaseDataSource {
             @Override
             public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
                 final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
+                //check firstly if there is data exists
+                videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.hasChildren()) {
+                            boolean otherDataExists = false;
+                            for (DataSnapshot deviceSnapshot : snapshot.getChildren()) {
+                                if (!deviceSnapshot.getKey().equals(deviceToken)) {
+                                    otherDataExists = true;
+                                    break;
+                                }
+                            }
+                            if (!otherDataExists) {
+                                emitter.onNext(new VideoQuestionItem());
+                            }
+                        } else {
+                            emitter.onNext(new VideoQuestionItem());
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
                 videosRef.addChildEventListener(new ChildEventListener() {
                     @Override
                     public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {

@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.devlomi.record_view.RecordView;
@@ -28,7 +29,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.media3.common.util.Util;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -47,6 +47,10 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
 
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
+    @BindView(R.id.empty_view_textview)
+    TextView emptyTextView;
+    @BindView(R.id.emptyView)
+    View emptyView;
     @Inject
     ViewModelProviderFactory providerFactory;
     @Inject
@@ -87,12 +91,28 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
         observeVideosUris();
         observeUploadingRecordedAudio();
+        observeExistVideosState();
         if (isCurrentUser) {
             swipeableVideosViewModel.getCurrentUserVideos();
         } else {
             swipeableVideosViewModel.getOtherUsersVideos();
         }
         return view;
+    }
+
+    private void observeExistVideosState() {
+        swipeableVideosViewModel.observeExistVideosState().observe(getViewLifecycleOwner(), new Observer<Boolean>() {
+            @Override
+            public void onChanged(Boolean isDataExists) {
+                if (!isDataExists) {
+                    viewPagerVideos.setVisibility(View.GONE);
+                    emptyView.setVisibility(View.VISIBLE);
+                } else {
+                    viewPagerVideos.setVisibility(View.VISIBLE);
+                    emptyView.setVisibility(View.GONE);
+                }
+            }
+        });
     }
 
     private void observeUploadingRecordedAudio() {
@@ -117,9 +137,14 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
         swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), new Observer<VideoQuestionItem>() {
             @Override
             public void onChanged(VideoQuestionItem videoQuestionItem) {
+                if (viewPagerVideos.getVisibility() != View.VISIBLE) {
+                    viewPagerVideos.setVisibility(View.VISIBLE);
+                    emptyView.setVisibility(View.GONE);
+                }
                 videosAdapter.addNewVideo(videoQuestionItem);
             }
         });
+
     }
 
     @Override
@@ -160,9 +185,7 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     @Override
     public void onResume() {
         super.onResume();
-        if ((Util.SDK_INT <= 23)) {
-            videosAdapter.getExoPlayerVideoManager().resumePlaying();
-        }
+        videosAdapter.getExoPlayerVideoManager().resumePlaying();
     }
 
     @Override

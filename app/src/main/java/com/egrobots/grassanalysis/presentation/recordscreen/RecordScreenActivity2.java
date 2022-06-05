@@ -102,7 +102,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
                     case SUCCESS:
                         loadingDialog.dismiss();
                         finish();
-                        Toast.makeText(this, "Video uploaded Successfully", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "تم تحميل الفيديو بنجاح", Toast.LENGTH_SHORT).show();
                         break;
                     case ERROR:
                         loadingDialog.dismiss();

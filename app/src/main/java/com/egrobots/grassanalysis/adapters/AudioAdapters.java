@@ -44,7 +44,7 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
     @Override
     public void onBindViewHolder(@NonNull AudioViewHolder holder, int position) {
         String audioUri = audioUris.get(position);
-        holder.audioNameTextView.setText("Audio Name: " + audioUri);
+        holder.audioNameTextView.setText("Audio Name: " + position);
         holder.setAudioUri(audioUri);
     }
 
@@ -54,7 +54,7 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
     }
 
     public void addNewAudio(String audioUri) {
-        audioUris.add(audioUri);
+        audioUris.add(0, audioUri);
         notifyDataSetChanged();
     }
 
