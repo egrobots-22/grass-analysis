@@ -1,20 +1,29 @@
 package com.egrobots.grassanalysis.presentation.recordscreen;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.arthenica.mobileffmpeg.Config;
+import com.arthenica.mobileffmpeg.ExecuteCallback;
+import com.arthenica.mobileffmpeg.FFmpeg;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.managers.CameraXRecorder;
 import com.egrobots.grassanalysis.utils.LoadingDialog;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
+
+import java.io.File;
 
 import javax.inject.Inject;
 
@@ -22,11 +31,15 @@ import androidx.annotation.NonNull;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.lifecycle.ViewModelProvider;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
+
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL;
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 
 public class RecordScreenActivity2 extends DaggerAppCompatActivity implements CameraXRecorder.CameraXCallback {
 
@@ -52,6 +65,8 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private int MAX_VID_DURATION = 30;
     private Handler handler = new Handler();
     private Runnable updateEverySecRunnable;
+    private ProgressDialog pd;
+    private boolean compressVideo = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,9 +149,46 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     public void onStopRecording(Uri videoUri) {
         recordedSeconds = 0;
         videoCaptureButton.setEnabled(true);
-        videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.start_record));
-        String fileType = utils.getFieType(videoUri);
-        recordScreenViewModel.uploadVideo(videoUri, fileType);
+        videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
+        handler.removeCallbacks(updateEverySecRunnable);
+        if (!compressVideo) {
+            String fileType = utils.getFieType(videoUri);
+            recordScreenViewModel.uploadVideo(videoUri, fileType);
+        } else {
+            pd = new ProgressDialog(this);
+            pd.setTitle("من فضلك انتظر");
+            pd.show();
+            String input = utils.getPathFromUri(videoUri);
+            String output = utils.getCompressedPath(videoUri);
+            execFFmpegBinary(input, output);
+        }
+
+    }
+
+    private void execFFmpegBinary(String input, String output) {
+        try {
+            Log.i(Config.TAG, "input file path : " + input);
+            Log.i(Config.TAG, "output file path : " + output);
+            String exe = "-i " + input + " -vf scale=1280:720 " + output;
+            FFmpeg.executeAsync(exe, new ExecuteCallback() {
+                @Override
+                public void apply(long executionId, int returnCode) {
+                    if (returnCode == RETURN_CODE_SUCCESS) {
+                        Uri outputUri = FileProvider.getUriForFile(RecordScreenActivity2.this,
+                                getApplicationContext().getPackageName() + ".provider", new File(output));
+                        String fileType = utils.getFieType(outputUri);
+                        recordScreenViewModel.uploadVideo(outputUri, fileType);
+                    } else if (returnCode == RETURN_CODE_CANCEL) {
+                        Log.i(Config.TAG, "Async command execution cancelled by user.");
+                    } else {
+                        Log.i(Config.TAG, String.format("Async command execution failed with returnCode=%d.", returnCode));
+                    }
+                    pd.dismiss();
+                }
+            });
+        } catch (Exception e) {
+            // Mention to user the command is currently running
+        }
     }
 
     @Override

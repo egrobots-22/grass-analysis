@@ -72,7 +72,7 @@ public class CameraXRecorder {
 
         // Video capture use case
         Recorder recorder = new Recorder.Builder()
-                .setQualitySelector(QualitySelector.from(Quality.LOWEST))
+                .setQualitySelector(QualitySelector.from(Quality.HD))
                 .build();
 
 
