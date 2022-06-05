@@ -11,4 +11,6 @@ public class Constants {
     public static final String AUDIO_PATH = "Answers/Recording/";
     public static final String AUDIO_FILE_TYPE = ".mp3";
     public static final String ANSWERS_NODE = "answers";
+    public static final String VIDEO_FILE_TYPE = ".mp4";
+    public static final String NO_DATA = "no_data";
 }

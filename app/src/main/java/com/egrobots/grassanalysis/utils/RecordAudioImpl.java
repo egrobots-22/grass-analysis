@@ -1,19 +1,16 @@
 package com.egrobots.grassanalysis.utils;
 
-import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.graphics.Color;
 
 import com.devlomi.record_view.OnRecordListener;
 import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
-import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.managers.AudioRecorder;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class RecordAudioImpl {
     private static final String FILE_TYPE = ".mp3";

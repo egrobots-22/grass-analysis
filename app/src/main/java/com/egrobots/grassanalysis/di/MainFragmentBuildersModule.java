@@ -10,5 +10,5 @@ import dagger.android.ContributesAndroidInjector;
 public abstract class MainFragmentBuildersModule {
 
     @ContributesAndroidInjector(modules = SwipeableVideosAdapterModule.class)
-    abstract SwipeableVideosFragment contributeChatFragment();
+    abstract SwipeableVideosFragment contributeSwipeableVideosFragment();
 }

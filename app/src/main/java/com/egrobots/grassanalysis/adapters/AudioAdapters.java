@@ -9,7 +9,7 @@ import android.widget.TextView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
-import com.egrobots.grassanalysis.utils.AudioPlayer;
+import com.egrobots.grassanalysis.managers.AudioPlayer;
 
 import java.util.ArrayList;
 import java.util.List;

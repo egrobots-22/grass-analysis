@@ -14,6 +14,7 @@ import com.google.firebase.storage.StorageReference;
 
 import javax.inject.Singleton;
 
+import androidx.media3.exoplayer.ExoPlayer;
 import dagger.Module;
 import dagger.Provides;
 

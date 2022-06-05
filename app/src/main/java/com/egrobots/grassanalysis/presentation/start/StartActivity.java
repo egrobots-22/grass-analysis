@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.widget.Button;
 
 import com.egrobots.grassanalysis.R;
-import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity;
+import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity2;
 import com.egrobots.grassanalysis.presentation.videos.VideosTabActivity;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,7 +27,7 @@ public class StartActivity extends AppCompatActivity {
 
     @OnClick(R.id.openRecordScreenButton)
     public void onOpenRecordScreenClicked() {
-        startActivity(new Intent(this, RecordScreenActivity.class));
+        startActivity(new Intent(this, RecordScreenActivity2.class));
     }
 
     @OnClick(R.id.openVideosScreenButton)

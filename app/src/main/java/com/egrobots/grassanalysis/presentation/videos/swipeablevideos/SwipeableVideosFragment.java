@@ -28,6 +28,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.media3.common.util.Util;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -53,6 +54,7 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
 
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
+    private boolean isScrolled = false;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -80,6 +82,7 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
         ButterKnife.bind(this, view);
 
         videosAdapter.setRecordAudioCallback(this);
+        videosAdapter.getExoPlayerVideoManager().stopPlayer();
         viewPagerVideos.setAdapter(videosAdapter);
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
         observeVideosUris();
@@ -154,4 +157,29 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
         });
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        if ((Util.SDK_INT <= 23)) {
+            videosAdapter.getExoPlayerVideoManager().resumePlaying();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        videosAdapter.getExoPlayerVideoManager().stopPlayer();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        videosAdapter.getExoPlayerVideoManager().stopPlayer();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        videosAdapter.getExoPlayerVideoManager().releasePlayer();
+    }
 }

@@ -5,13 +5,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-import android.widget.VideoView;
 
 import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.managers.VideoManager;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.UUID;
 
 import androidx.annotation.NonNull;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import butterknife.BindView;
@@ -31,6 +33,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     private List<VideoQuestionItem> videoQuestionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private DatabaseRepository databaseRepository;
+    private ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
 
     public VideosAdapter(DatabaseRepository databaseRepository) {
         this.databaseRepository = databaseRepository;
@@ -64,10 +67,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         notifyDataSetChanged();
     }
 
+    public ExoPlayerVideoManager getExoPlayerVideoManager() {
+        return exoPlayerVideoManager;
+    }
 
     class VideoViewHolder extends RecyclerView.ViewHolder implements VideoManager.VideoManagerCallback {
-        @BindView(R.id.videoView)
-        VideoView videoView;
+
         @BindView(R.id.record_view)
         RecordView recordView;
         @BindView(R.id.record_button)
@@ -76,15 +81,22 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         ProgressBar progressBar;
         @BindView(R.id.audioFilesRecyclerView)
         RecyclerView audioFilesRecyclerView;
+        @BindView(R.id.videoView)
+        PlayerView playerView;
 
         public VideoViewHolder(@NonNull View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
+
         }
 
         private void setVideoData(String videoUri) {
-            VideoManager videoManager = new VideoManager(videoView, this);
-            videoManager.setVideoData(videoUri);
+//            exoPlayerVideoManager.stopPlayer();
+            ExoPlayer exoPlayer = new ExoPlayer.Builder(itemView.getContext()).build();
+            exoPlayerVideoManager.setPlayerView(playerView);
+            exoPlayerVideoManager.stopPlayer();
+            exoPlayerVideoManager.setExoPlayer(exoPlayer);
+            exoPlayerVideoManager.initializePlayer(videoUri);
         }
 
         private void setRecordedAudios(VideoQuestionItem questionItem) {
@@ -107,6 +119,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
         @Override
         public void onError(String msg) {
+            progressBar.setVisibility(View.GONE);
             Toast.makeText(itemView.getContext(), msg, Toast.LENGTH_SHORT).show();
         }
     }

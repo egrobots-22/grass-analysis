@@ -1,4 +1,4 @@
-package com.egrobots.grassanalysis.utils;
+package com.egrobots.grassanalysis.managers;
 
 import android.media.AudioAttributes;
 import android.media.AudioManager;
