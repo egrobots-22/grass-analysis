@@ -44,6 +44,7 @@ import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 public class RecordScreenActivity2 extends DaggerAppCompatActivity implements CameraXRecorder.CameraXCallback {
 
     private static final int REQUEST_CODE_PERMISSIONS = 1;
+    private static final int MAX_VID_DURATION = 30;
     private static final String[] REQUIRED_PERMISSIONS =
             {Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
@@ -62,11 +63,10 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private RecordScreenViewModel recordScreenViewModel;
     private CameraXRecorder cameraXRecorder;
     private int recordedSeconds;
-    private int MAX_VID_DURATION = 30;
     private Handler handler = new Handler();
     private Runnable updateEverySecRunnable;
     private ProgressDialog pd;
-    private boolean compressVideo = true;
+    private boolean compressVideo = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -102,7 +102,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
                     case SUCCESS:
                         loadingDialog.dismiss();
                         finish();
-                        Toast.makeText(this, "تم تحميل الفيديو بنجاح", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, R.string.uploaded_successfully, Toast.LENGTH_SHORT).show();
                         break;
                     case ERROR:
                         loadingDialog.dismiss();
@@ -169,7 +169,9 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         try {
             Log.i(Config.TAG, "input file path : " + input);
             Log.i(Config.TAG, "output file path : " + output);
-            String exe = "-i " + input + " -vf scale=1280:720 " + output;
+//            String exe = "-i " + input + " -vf scale=1280:720 " + output;
+//            String exe = "-i " + input + " -vcodec libx265 -crf 18 " + output;
+            String exe = "-i "+ input +" -c:v libx265 -vtag hvc1 -c:a copy " + output;
             FFmpeg.executeAsync(exe, new ExecuteCallback() {
                 @Override
                 public void apply(long executionId, int returnCode) {
