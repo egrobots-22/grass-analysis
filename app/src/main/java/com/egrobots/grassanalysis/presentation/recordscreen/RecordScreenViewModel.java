@@ -35,7 +35,7 @@ public class RecordScreenViewModel extends ViewModel {
     }
 
     public void uploadVideo(Uri videoUri, String fileType) {
-        databaseRepository.uploadVideo(videoUri, fileType, localDataRepository.getDeviceToken())
+        databaseRepository.uploadVideo(videoUri, fileType, localDataRepository.getDeviceToken(), localDataRepository.getUsername())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()

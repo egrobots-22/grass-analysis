@@ -134,13 +134,13 @@ public class SwipeableVideosViewModel extends ViewModel {
 
                     @Override
                     public void onComplete() {
-
+                        videoUris.setValue(null);
                     }
                 });
     }
 
     public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
-        databaseRepository.uploadRecordedAudio(recordFile, questionItem)
+        databaseRepository.uploadRecordedAudio(recordFile, questionItem, localDataRepository.getUsername())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new CompletableObserver() {

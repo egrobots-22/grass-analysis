@@ -3,6 +3,7 @@ package com.egrobots.grassanalysis.datasource.remote;
 import android.net.Uri;
 import android.util.Log;
 
+import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.gms.tasks.Continuation;
@@ -48,10 +49,11 @@ public class FirebaseDataSource {
         this.firebaseDatabase = firebaseDatabase;
     }
 
-    private void saveVideoInfo(FlowableEmitter<Double> emitter, String videoUri, String deviceToken) {
+    private void saveVideoInfo(FlowableEmitter<Double> emitter, String videoUri, String deviceToken, String username) {
         DatabaseReference reference1 = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
         VideoQuestionItem videoQuestionItem = new VideoQuestionItem();
         videoQuestionItem.setVideoQuestionUri(videoUri);
+        videoQuestionItem.setUsername(username);
         reference1.child(deviceToken).push().setValue(videoQuestionItem).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
@@ -64,7 +66,7 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken) {
+    public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken, String username) {
         return Flowable.create(new FlowableOnSubscribe<Double>() {
             @Override
             public void subscribe(FlowableEmitter<Double> emitter) throws Exception {
@@ -87,7 +89,7 @@ public class FirebaseDataSource {
                         reference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
                             @Override
                             public void onComplete(@NonNull Task<Uri> task) {
-                                saveVideoInfo(emitter, task.getResult().toString(), deviceToken);
+                                saveVideoInfo(emitter, task.getResult().toString(), deviceToken, username);
                             }
                         });
                         return reference.getDownloadUrl();
@@ -257,7 +259,7 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
+    public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem, String username) {
         return Completable.create(new CompletableOnSubscribe() {
             @Override
             public void subscribe(CompletableEmitter emitter) throws Exception {
@@ -276,10 +278,12 @@ public class FirebaseDataSource {
                                     .child(questionItem.getDeviceToken())
                                     .child(questionItem.getId())
                                     .child(Constants.ANSWERS_NODE);
-                            String pushId = audioRef.push().getKey();
+
+//                            String pushId = audioRef.push().getKey();
                             HashMap<String, Object> updates = new HashMap<>();
-                            updates.put(pushId, url);
-                            audioRef.updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
+                            updates.put("audioUri", url);
+                            updates.put("recordedUser", username);
+                            audioRef.push().updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {
                                     if (task.isSuccessful()) {
@@ -304,10 +308,10 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<String> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
-        return Flowable.create(new FlowableOnSubscribe<String>() {
+    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
+        return Flowable.create(new FlowableOnSubscribe<AudioAnswer>() {
             @Override
-            public void subscribe(FlowableEmitter<String> emitter) throws Exception {
+            public void subscribe(FlowableEmitter<AudioAnswer> emitter) throws Exception {
                 DatabaseReference databaseReference = FirebaseDatabase.getInstance()
                         .getReference(Constants.QUESTIONS_NODE)
                         .child(questionItem.getDeviceToken())
@@ -317,8 +321,11 @@ public class FirebaseDataSource {
                     @Override
                     public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                         if (snapshot.exists()) {
-                            String audioAnswerUri = (String) snapshot.getValue();
-                            emitter.onNext(audioAnswerUri);
+                            AudioAnswer audioAnswer = snapshot.getValue(AudioAnswer.class);
+                            audioAnswer.setId(snapshot.getKey());
+//                            audioAnswer.setAudioUri((String) snapshot.getValue());
+//                            String audioAnswerUri = (String) snapshot.getValue();
+                            emitter.onNext(audioAnswer);
                         }
                     }
 

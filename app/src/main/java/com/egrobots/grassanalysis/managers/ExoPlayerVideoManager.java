@@ -1,8 +1,14 @@
 package com.egrobots.grassanalysis.managers;
 
+import android.util.Log;
+
 import androidx.media3.common.MediaItem;
+import androidx.media3.common.Player;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
+
+import static androidx.media3.common.Player.STATE_ENDED;
+import static androidx.media3.common.Player.STATE_READY;
 
 public class ExoPlayerVideoManager {
 
@@ -11,6 +17,7 @@ public class ExoPlayerVideoManager {
     private boolean playWhenReady = true;
     private int currentItem = 0;
     private long playbackPosition = 0L;
+    private VideoManagerCallback videoManagerCallback;
 
     public void setPlayerView(PlayerView playerView) {
         this.playerView = playerView;
@@ -22,6 +29,10 @@ public class ExoPlayerVideoManager {
 
     public ExoPlayer getExoPlayer() {
         return exoPlayer;
+    }
+
+    public void setExoPlayerCallback(VideoManagerCallback videoManagerCallback) {
+        this.videoManagerCallback = videoManagerCallback;
     }
 
     public void stopPlayer() {
@@ -37,6 +48,25 @@ public class ExoPlayerVideoManager {
         exoPlayer.setPlayWhenReady(playWhenReady);
         exoPlayer.seekTo(currentItem, playbackPosition);
         exoPlayer.prepare();
+        exoPlayer.play();
+        exoPlayer.addListener(new Player.Listener() {
+            @Override
+            public void onPlaybackStateChanged(int playbackState) {
+                switch (playbackState) {
+                    case STATE_READY:
+                        videoManagerCallback.onPrepare();
+                        Log.i("VIDEO READY", "onPlaybackStateChanged: " + playbackState);
+                        break;
+                    case STATE_ENDED:
+                        Log.i("VIDEO ENDED", "onPlaybackStateChanged: " + playbackState);
+                        break;
+                    case Player.STATE_BUFFERING:
+                        break;
+                    case Player.STATE_IDLE:
+                        break;
+                }
+            }
+        });
         exoPlayer.play();
     }
 
@@ -62,5 +92,10 @@ public class ExoPlayerVideoManager {
             exoPlayer.release();
         }
         exoPlayer = null;
+    }
+
+    public interface VideoManagerCallback {
+        void onPrepare();
+        void onError(String msg);
     }
 }

@@ -18,4 +18,8 @@ public class LocalDataRepository {
     public String getDeviceToken() {
         return sharedPreferencesDataSource.getDeviceToken();
     }
+
+    public String getUsername() {
+        return sharedPreferencesDataSource.getUserName();
+    }
 }

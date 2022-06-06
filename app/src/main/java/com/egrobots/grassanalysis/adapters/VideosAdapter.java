@@ -12,7 +12,6 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
-import com.egrobots.grassanalysis.managers.VideoManager;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 
@@ -71,7 +70,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         return exoPlayerVideoManager;
     }
 
-    class VideoViewHolder extends RecyclerView.ViewHolder implements VideoManager.VideoManagerCallback {
+    class VideoViewHolder extends RecyclerView.ViewHolder implements ExoPlayerVideoManager.VideoManagerCallback {
 
         @BindView(R.id.record_view)
         RecordView recordView;
@@ -94,6 +93,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 //            exoPlayerVideoManager.stopPlayer();
             ExoPlayer exoPlayer = new ExoPlayer.Builder(itemView.getContext()).build();
             exoPlayerVideoManager.setPlayerView(playerView);
+            exoPlayerVideoManager.setExoPlayerCallback(this);
             exoPlayerVideoManager.stopPlayer();
             exoPlayerVideoManager.setExoPlayer(exoPlayer);
             exoPlayerVideoManager.initializePlayer(videoUri);

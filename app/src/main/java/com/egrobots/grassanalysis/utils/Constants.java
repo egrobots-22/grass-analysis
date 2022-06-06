@@ -13,4 +13,5 @@ public class Constants {
     public static final String ANSWERS_NODE = "answers";
     public static final String VIDEO_FILE_TYPE = ".mp4";
     public static final String NO_DATA = "no_data";
+    public static final String USER_NAME = "user_name";
 }

@@ -4,11 +4,13 @@
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     android:background="@android:color/transparent"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:weightSum="10">
 
     <FrameLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
         android:layout_gravity="center">
 
         <ImageButton
@@ -30,12 +32,22 @@
 
     <TextView
         android:id="@+id/audioNameTextView"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="8"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:padding="8dp"
-        android:text="Audio Name"
+        android:text="user name"
         android:textColor="@color/white"
         android:textSize="14sp" />
+
+    <TextView
+        android:id="@+id/audio_length_textview"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+        android:text="00:00"
+        android:textColor="@color/white" />
 
 </LinearLayout>

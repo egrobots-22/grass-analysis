@@ -2,6 +2,7 @@ package com.egrobots.grassanalysis.data;
 
 import android.net.Uri;
 
+import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 
@@ -21,8 +22,8 @@ public class DatabaseRepository {
         this.firebaseDataSource = firebaseDataSource;
     }
 
-    public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken) {
-        return firebaseDataSource.uploadVideo(videoUri, fileType, deviceToken);
+    public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken, String username) {
+        return firebaseDataSource.uploadVideo(videoUri, fileType, deviceToken, username);
     }
 
     public Flowable<VideoQuestionItem> getAllVideos() {
@@ -37,11 +38,11 @@ public class DatabaseRepository {
         return firebaseDataSource.getOtherUsersVideos(deviceToken);
     }
 
-    public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
-        return firebaseDataSource.uploadRecordedAudio(recordFile, questionItem);
+    public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem, String username) {
+        return firebaseDataSource.uploadRecordedAudio(recordFile, questionItem, username);
     }
 
-    public Flowable<String> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
+    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
         return firebaseDataSource.getRecordedAudiosForQuestion(questionItem);
     }
 }

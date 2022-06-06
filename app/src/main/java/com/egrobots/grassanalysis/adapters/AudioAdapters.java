@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
+import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 
@@ -26,7 +27,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewHolder> {
-    private List<String> audioUris = new ArrayList<>();
+    private List<AudioAnswer> audioAnswers = new ArrayList<>();
     private DatabaseRepository databaseRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
 
@@ -43,18 +44,18 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
 
     @Override
     public void onBindViewHolder(@NonNull AudioViewHolder holder, int position) {
-        String audioUri = audioUris.get(position);
-        holder.audioNameTextView.setText("Audio Name: " + position);
-        holder.setAudioUri(audioUri);
+        AudioAnswer audioAnswer = audioAnswers.get(position);
+        holder.audioNameTextView.setText(audioAnswer.getRecordedUser());
+        holder.audioLengthTextView.setText(holder.setAudioUri(audioAnswer.getAudioUri()));
     }
 
     @Override
     public int getItemCount() {
-        return audioUris.size();
+        return audioAnswers.size();
     }
 
-    public void addNewAudio(String audioUri) {
-        audioUris.add(0, audioUri);
+    public void addNewAudio(AudioAnswer audioAnswer) {
+        audioAnswers.add(0, audioAnswer);
         notifyDataSetChanged();
     }
 
@@ -63,15 +64,15 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()
-                .subscribe(new Observer<String>() {
+                .subscribe(new Observer<AudioAnswer>() {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
                     }
 
                     @Override
-                    public void onNext(String audioUri) {
-                        addNewAudio(audioUri);
+                    public void onNext(AudioAnswer audioAnswer) {
+                        addNewAudio(audioAnswer);
                     }
 
                     @Override
@@ -93,6 +94,8 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         ImageButton pauseButton;
         @BindView(R.id.audioNameTextView)
         TextView audioNameTextView;
+        @BindView(R.id.audio_length_textview)
+        TextView audioLengthTextView;
         private AudioPlayer audioPlayer;
 
         public AudioViewHolder(@NonNull View itemView) {
@@ -100,8 +103,14 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             ButterKnife.bind(this, itemView);
         }
 
-        private void setAudioUri(String audioUri) {
-            audioPlayer = new AudioPlayer(audioUri, this);
+        private String setAudioUri(String audioUri) {
+            audioPlayer = new AudioPlayer();
+            audioPlayer.setAudio(audioUri, this);
+            return audioPlayer.getAudioDuration();
+        }
+
+        private void getAudioDuration() {
+            audioPlayer.getAudioDuration();
         }
 
         @OnClick(R.id.pauseButton)

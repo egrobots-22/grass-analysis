@@ -6,6 +6,7 @@ public class VideoQuestionItem {
     private String id;
     private String deviceToken;
     private String videoQuestionUri;
+    private String username;
     private List<String> audioAnswerUri;
 
     public String getId() {
@@ -30,6 +31,14 @@ public class VideoQuestionItem {
 
     public void setVideoQuestionUri(String videoQuestionUri) {
         this.videoQuestionUri = videoQuestionUri;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public List<String> getAudioAnswerUri() {

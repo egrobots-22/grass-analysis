@@ -2,6 +2,7 @@ package com.egrobots.grassanalysis.managers;
 
 import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 
 import java.io.IOException;
@@ -11,7 +12,7 @@ public class AudioPlayer {
     private String audioUri;
     private AudioPlayCallback audioPlayCallback;
 
-    public AudioPlayer(String audioUri, AudioPlayCallback audioPlayCallback) {
+    public void setAudio(String audioUri, AudioPlayCallback audioPlayCallback) {
         this.audioUri = audioUri;
         this.audioPlayCallback = audioPlayCallback;
     }
@@ -44,6 +45,39 @@ public class AudioPlayer {
             mediaPlayer.reset();
             mediaPlayer.release();
         }
+    }
+
+    public String getAudioDuration() {
+        MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
+        mediaMetadataRetriever.setDataSource(audioUri);
+        String durationStr = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+        return formatMilliSeconds(Long.parseLong(durationStr));
+    }
+
+    private String formatMilliSeconds(long milliseconds) {
+        String finalTimerString = "";
+        String secondsString = "";
+
+        // Convert total duration into time
+        int hours = (int) (milliseconds / (1000 * 60 * 60));
+        int minutes = (int) (milliseconds % (1000 * 60 * 60)) / (1000 * 60);
+        int seconds = (int) ((milliseconds % (1000 * 60 * 60)) % (1000 * 60) / 1000);
+
+        // Add hours if there
+        if (hours > 0) {
+            finalTimerString = hours + ":";
+        }
+
+        // Prepending 0 to seconds if it is one digit
+        if (seconds < 10) {
+            secondsString = "0" + seconds;
+        } else {
+            secondsString = "" + seconds;
+        }
+
+        finalTimerString = finalTimerString + minutes + ":" + secondsString;
+        // return timer string
+        return finalTimerString;
     }
 
     public interface AudioPlayCallback {

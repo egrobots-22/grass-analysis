@@ -19,4 +19,8 @@ public class SharedPreferencesDataSource {
     public String getDeviceToken() {
         return sharedPreferences.getString(Constants.DEVICE_TOKEN, null);
     }
+
+    public String getUserName() {
+        return sharedPreferences.getString(Constants.USER_NAME, null);
+    }
 }
