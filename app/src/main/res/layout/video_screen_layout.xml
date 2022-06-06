@@ -70,6 +70,7 @@
             android:id="@+id/audioFilesRecyclerView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
             android:background="@color/transparent_black"
             app:layout_constrainedHeight="true"
             app:layout_constraintBottom_toBottomOf="parent"

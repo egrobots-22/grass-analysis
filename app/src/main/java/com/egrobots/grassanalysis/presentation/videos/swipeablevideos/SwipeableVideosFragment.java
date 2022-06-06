@@ -14,6 +14,7 @@ import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.StateResource;
@@ -59,6 +60,9 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
     private boolean isScrolled = false;
+    private ExoPlayerVideoManager exoPlayerVideoManagerPrev;
+    private ExoPlayerVideoManager exoPlayerVideoManagerCur;
+    private int prevPosition = -1;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -86,8 +90,20 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
         ButterKnife.bind(this, view);
 
         videosAdapter.setRecordAudioCallback(this);
-        videosAdapter.getExoPlayerVideoManager().stopPlayer();
         viewPagerVideos.setAdapter(videosAdapter);
+        viewPagerVideos.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                if (prevPosition != -1) {
+                    exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
+                    exoPlayerVideoManagerPrev.stopPlayer();
+                }
+                exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
+                exoPlayerVideoManagerCur.play();
+                prevPosition = position;
+            }
+
+        });
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
         observeVideosUris();
         observeUploadingRecordedAudio();
@@ -185,24 +201,32 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     @Override
     public void onResume() {
         super.onResume();
-        videosAdapter.getExoPlayerVideoManager().resumePlaying();
+        if (exoPlayerVideoManagerCur != null) {
+            exoPlayerVideoManagerCur.resumePlaying();
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        videosAdapter.getExoPlayerVideoManager().stopPlayer();
+        for (ExoPlayerVideoManager manager : videosAdapter.getCurrentExoPlayerManagerList()) {
+            manager.stopPlayer();
+        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        videosAdapter.getExoPlayerVideoManager().stopPlayer();
+        for (ExoPlayerVideoManager manager : videosAdapter.getCurrentExoPlayerManagerList()) {
+            manager.stopPlayer();
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        videosAdapter.getExoPlayerVideoManager().releasePlayer();
+        for (ExoPlayerVideoManager manager : videosAdapter.getCurrentExoPlayerManagerList()) {
+            manager.stopPlayer();
+        }
     }
 }

@@ -32,7 +32,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     private List<VideoQuestionItem> videoQuestionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private DatabaseRepository databaseRepository;
-    private ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
+    private List<ExoPlayerVideoManager> managers = new ArrayList<>();
 
     public VideosAdapter(DatabaseRepository databaseRepository) {
         this.databaseRepository = databaseRepository;
@@ -53,7 +53,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         VideoQuestionItem questionItem = videoQuestionItems.get(position);
         holder.setVideoData(questionItem.getVideoQuestionUri());
         //get audio files for current video question
-        holder.setRecordedAudios(questionItem);
+        holder.setRecordAudioView(questionItem);
+        holder.setupAudioFilesRecyclerView(questionItem);
     }
 
     @Override
@@ -64,10 +65,15 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public void addNewVideo(VideoQuestionItem videoQuestionItem) {
         videoQuestionItems.add(0, videoQuestionItem);
         notifyDataSetChanged();
+        managers.add(new ExoPlayerVideoManager());
     }
 
-    public ExoPlayerVideoManager getExoPlayerVideoManager() {
-        return exoPlayerVideoManager;
+    public ExoPlayerVideoManager getCurrentExoPlayerManager(int position) {
+        return managers.get(position);
+    }
+
+    public List<ExoPlayerVideoManager> getCurrentExoPlayerManagerList() {
+        return managers;
     }
 
     class VideoViewHolder extends RecyclerView.ViewHolder implements ExoPlayerVideoManager.VideoManagerCallback {
@@ -90,19 +96,17 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         }
 
         private void setVideoData(String videoUri) {
-//            exoPlayerVideoManager.stopPlayer();
+            ExoPlayerVideoManager exoPlayerVideoManager = managers.get(getAbsoluteAdapterPosition());
             ExoPlayer exoPlayer = new ExoPlayer.Builder(itemView.getContext()).build();
             exoPlayerVideoManager.setPlayerView(playerView);
             exoPlayerVideoManager.setExoPlayerCallback(this);
-            exoPlayerVideoManager.stopPlayer();
             exoPlayerVideoManager.setExoPlayer(exoPlayer);
             exoPlayerVideoManager.initializePlayer(videoUri);
         }
 
-        private void setRecordedAudios(VideoQuestionItem questionItem) {
+        private void setRecordAudioView(VideoQuestionItem questionItem) {
             RecordAudioImpl recordAudioImpl = new RecordAudioImpl(recordView, recordButton, questionItem, recordAudioCallback);
             recordAudioImpl.setupRecordAudio(itemView.getContext().getExternalFilesDir(null), UUID.randomUUID().toString() + Constants.AUDIO_FILE_TYPE);
-            setupAudioFilesRecyclerView(questionItem);
         }
 
         private void setupAudioFilesRecyclerView(VideoQuestionItem questionItem) {

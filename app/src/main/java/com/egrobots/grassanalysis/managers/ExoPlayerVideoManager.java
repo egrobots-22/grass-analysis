@@ -47,27 +47,28 @@ public class ExoPlayerVideoManager {
         exoPlayer.setMediaItem(mediaItem);
         exoPlayer.setPlayWhenReady(playWhenReady);
         exoPlayer.seekTo(currentItem, playbackPosition);
-        exoPlayer.prepare();
-        exoPlayer.play();
+//        exoPlayer.prepare();
+//        exoPlayer.play();
         exoPlayer.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(int playbackState) {
                 switch (playbackState) {
                     case STATE_READY:
                         videoManagerCallback.onPrepare();
-                        Log.i("VIDEO READY", "onPlaybackStateChanged: " + playbackState);
+                        Log.i("VIDEO READY", "onPlaybackStateChanged: STATE_READY");
                         break;
                     case STATE_ENDED:
-                        Log.i("VIDEO ENDED", "onPlaybackStateChanged: " + playbackState);
+                        Log.i("VIDEO ENDED", "onPlaybackStateChanged: STATE_ENDED");
                         break;
                     case Player.STATE_BUFFERING:
+                        Log.i("VIDEO BUFFERING", "onPlaybackStateChanged: STATE_BUFFERING");
                         break;
                     case Player.STATE_IDLE:
+                        Log.i("VIDEO IDLE", "onPlaybackStateChanged: STATE_IDLE");
                         break;
                 }
             }
         });
-        exoPlayer.play();
     }
 
     public boolean isPlaying() {
@@ -78,9 +79,23 @@ public class ExoPlayerVideoManager {
         }
     }
 
+    public void play() {
+        if (exoPlayer != null) {
+            exoPlayer.prepare();
+            exoPlayer.play();
+        }
+    }
+
     public void resumePlaying() {
         if (exoPlayer != null && !isPlaying()) {
-            exoPlayer.play();
+            exoPlayer.setPlayWhenReady(true);
+            exoPlayer.getPlaybackState();
+        }
+    }
+
+    public void pausePlaying() {
+        if (exoPlayer != null && !isPlaying()) {
+            exoPlayer.setPlayWhenReady(false);
         }
     }
 
