@@ -24,25 +24,6 @@ public class SplashActivity extends AppCompatActivity {
         setContentView(R.layout.activity_splash);
 
         new Handler().postDelayed(() -> {
-//            FirebaseMessaging.getInstance().getToken().addOnCompleteListener(task -> {
-//                if (!task.isSuccessful()) {
-//                    startActivity(new Intent(SplashActivity.this, VideosTabActivity.class));
-//                } else {
-//                    // Get new FCM registration token
-//                    String token = task.getResult();
-//                    //set user random name to shared pref
-//                    SharedPreferences sharedPreferences = getSharedPreferences(Constants.PREF_NAME, MODE_PRIVATE);
-//                    SharedPreferences.Editor editor = sharedPreferences.edit();
-//                    String deviceName = sharedPreferences.getString(Constants.USER_NAME, null);
-//                    if (deviceName == null) {
-//                        deviceName = UUID.randomUUID().toString();
-//                        editor.putString(Constants.USER_NAME, deviceName);
-//                        editor.putString(Constants.DEVICE_TOKEN, token);
-//                        editor.apply();
-//                    }
-//                    startActivity(new Intent(SplashActivity.this, VideosTabActivity.class));
-//                }
-//            });
             startActivity(new Intent(SplashActivity.this, VideosTabActivity.class));
         }, SPLASH_TIME_OUT);
     }
