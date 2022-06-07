@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -19,19 +19,17 @@
         android:id="@+id/videoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_above="@id/audiosLayout"/>
+        app:resize_mode="fill" />
 
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="30dp"
         android:layout_height="30dp"
-        android:layout_centerInParent="true"
         android:visibility="gone"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
         android:background="#707d838a"
         android:orientation="horizontal"
         android:padding="16dp"
@@ -64,18 +62,18 @@
         android:id="@+id/audiosLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true">
+        android:layout_gravity="bottom">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/audioFilesRecyclerView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
             android:background="@color/transparent_black"
+            android:paddingBottom="8dp"
             app:layout_constrainedHeight="true"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHeight_max="150dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHeight_max="200dp"
             app:layout_constraintStart_toStartOf="parent"
             tools:listitem="@layout/play_audio_item_layout" />
 
@@ -84,7 +82,9 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_gravity="bottom|end"
-            android:layout_margin="24dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginEnd="24dp"
+            android:layout_marginBottom="16dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             tools:layout_editor_absoluteX="24dp">
@@ -118,4 +118,4 @@
         </RelativeLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-</RelativeLayout>
+</FrameLayout>

@@ -17,18 +17,12 @@ public class ExoPlayerVideoManager {
     private boolean playWhenReady = true;
     private int currentItem = 0;
     private long playbackPosition = 0L;
+    private boolean isShuffleEnabled = true;
     private VideoManagerCallback videoManagerCallback;
 
-    public void setPlayerView(PlayerView playerView) {
-        this.playerView = playerView;
-    }
-
-    public void setExoPlayer(ExoPlayer exoPlayer) {
+    public void setExoPlayer(ExoPlayer exoPlayer, String videoUri) {
         this.exoPlayer = exoPlayer;
-    }
-
-    public ExoPlayer getExoPlayer() {
-        return exoPlayer;
+        initializeExoPlayer(videoUri);
     }
 
     public void setExoPlayerCallback(VideoManagerCallback videoManagerCallback) {
@@ -41,24 +35,37 @@ public class ExoPlayerVideoManager {
         }
     }
 
-    public void initializePlayer(String videoUri) {
-        playerView.setPlayer(exoPlayer);
+    public void pausePlayer() {
+        if (this.exoPlayer != null) {
+            this.exoPlayer.pause();
+        }
+    }
+
+    public void initializeExoPlayer(String videoUri) {
         MediaItem mediaItem = MediaItem.fromUri(videoUri);
         exoPlayer.setMediaItem(mediaItem);
         exoPlayer.setPlayWhenReady(playWhenReady);
         exoPlayer.seekTo(currentItem, playbackPosition);
-//        exoPlayer.prepare();
-//        exoPlayer.play();
+        exoPlayer.prepare();
+        exoPlayer.pause();
         exoPlayer.addListener(new Player.Listener() {
             @Override
             public void onPlaybackStateChanged(int playbackState) {
                 switch (playbackState) {
                     case STATE_READY:
-                        videoManagerCallback.onPrepare();
                         Log.i("VIDEO READY", "onPlaybackStateChanged: STATE_READY");
                         break;
                     case STATE_ENDED:
                         Log.i("VIDEO ENDED", "onPlaybackStateChanged: STATE_ENDED");
+                        playerView.hideController();
+                        if (isShuffleEnabled) {
+                            //to restart video again after end
+                            exoPlayer.seekTo(0, 0);
+                        } else {
+                            //to scroll to next video
+                            videoManagerCallback.onEnd();
+                        }
+                        exoPlayer.play();
                         break;
                     case Player.STATE_BUFFERING:
                         Log.i("VIDEO BUFFERING", "onPlaybackStateChanged: STATE_BUFFERING");
@@ -69,6 +76,12 @@ public class ExoPlayerVideoManager {
                 }
             }
         });
+    }
+
+    public void initializePlayer(PlayerView playerView) {
+        playerView.setPlayer(exoPlayer);
+        playerView.hideController();
+        this.playerView = playerView;
     }
 
     public boolean isPlaying() {
@@ -93,12 +106,6 @@ public class ExoPlayerVideoManager {
         }
     }
 
-    public void pausePlaying() {
-        if (exoPlayer != null && !isPlaying()) {
-            exoPlayer.setPlayWhenReady(false);
-        }
-    }
-
     public void releasePlayer() {
         if (exoPlayer != null) {
             playbackPosition = exoPlayer.getCurrentPosition();
@@ -111,6 +118,9 @@ public class ExoPlayerVideoManager {
 
     public interface VideoManagerCallback {
         void onPrepare();
+
         void onError(String msg);
+
+        void onEnd();
     }
 }

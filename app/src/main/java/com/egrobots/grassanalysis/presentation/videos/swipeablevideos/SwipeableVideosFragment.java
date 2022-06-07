@@ -42,7 +42,8 @@ import static androidx.core.content.PermissionChecker.PERMISSION_GRANTED;
  * Use the {@link SwipeableVideosFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class SwipeableVideosFragment extends DaggerFragment implements RecordAudioImpl.RecordAudioCallback {
+public class SwipeableVideosFragment extends DaggerFragment
+        implements RecordAudioImpl.RecordAudioCallback, ExoPlayerVideoManager.VideoManagerCallback {
     private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
 
@@ -96,9 +97,10 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
             public void onPageSelected(int position) {
                 if (prevPosition != -1) {
                     exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
-                    exoPlayerVideoManagerPrev.stopPlayer();
+                    exoPlayerVideoManagerPrev.pausePlayer();
                 }
                 exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
+                exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
                 exoPlayerVideoManagerCur.play();
                 prevPosition = position;
             }
@@ -157,7 +159,7 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
                     viewPagerVideos.setVisibility(View.VISIBLE);
                     emptyView.setVisibility(View.GONE);
                 }
-                videosAdapter.addNewVideo(videoQuestionItem);
+                videosAdapter.addNewVideo(getContext(), videoQuestionItem);
             }
         });
 
@@ -209,17 +211,13 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
     @Override
     public void onPause() {
         super.onPause();
-        for (ExoPlayerVideoManager manager : videosAdapter.getCurrentExoPlayerManagerList()) {
-            manager.stopPlayer();
-        }
+        exoPlayerVideoManagerCur.pausePlayer();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        for (ExoPlayerVideoManager manager : videosAdapter.getCurrentExoPlayerManagerList()) {
-            manager.stopPlayer();
-        }
+        exoPlayerVideoManagerCur.pausePlayer();
     }
 
     @Override
@@ -227,6 +225,22 @@ public class SwipeableVideosFragment extends DaggerFragment implements RecordAud
         super.onDestroy();
         for (ExoPlayerVideoManager manager : videosAdapter.getCurrentExoPlayerManagerList()) {
             manager.stopPlayer();
+            manager.releasePlayer();
         }
+    }
+
+    @Override
+    public void onPrepare() {
+
+    }
+
+    @Override
+    public void onError(String msg) {
+
+    }
+
+    @Override
+    public void onEnd() {
+        viewPagerVideos.setCurrentItem(prevPosition + 1, true);
     }
 }

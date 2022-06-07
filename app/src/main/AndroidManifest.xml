@@ -11,7 +11,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".presentation.videos.VideosTabActivity" />
+            android:name=".presentation.videos.VideosTabActivity"
+            android:theme="@style/FullScreen"/>
         <activity android:name=".presentation.recordscreen.RecordScreenActivity2" />
         <activity android:name=".presentation.recordscreen.RecordScreenActivity" />
         <activity android:name=".presentation.start.StartActivity" />
