@@ -15,5 +15,11 @@
     <string name="your_questions">أسئلتك</string>
     <string name="other_questions">أسئلة أخرى</string>
     <string name="uploaded_successfully">تم تحميل الفيديو بنجاح</string>
+    <string name="progress_uploading">Uploading…</string>
+
+    <string name="upload_success">Upload finished</string>
+    <string name="upload_failure">Upload failed</string>
+    <string name="uploading_in_progress">جاري تحميل الفيديو</string>
+    <string name="compressing">Compressing..</string>\
 
 </resources>

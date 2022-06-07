@@ -49,7 +49,7 @@ public class FirebaseDataSource {
         this.firebaseDatabase = firebaseDatabase;
     }
 
-    private void saveVideoInfo(FlowableEmitter<Double> emitter, String videoUri, String deviceToken, String username) {
+    private void saveVideoInfo(FlowableEmitter emitter, String videoUri, String deviceToken, String username) {
         DatabaseReference reference1 = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
         VideoQuestionItem videoQuestionItem = new VideoQuestionItem();
         videoQuestionItem.setVideoQuestionUri(videoUri);
@@ -77,6 +77,39 @@ public class FirebaseDataSource {
                     public void onProgress(@NonNull UploadTask.TaskSnapshot snapshot) {
                         double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
                         emitter.onNext(progress);
+                    }
+                }).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                    @Override
+                    public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                        if (!task.isSuccessful()) {
+                            emitter.onError(task.getException());
+                        }
+
+                        // Continue with the task to get the download URL
+                        reference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
+                            @Override
+                            public void onComplete(@NonNull Task<Uri> task) {
+                                saveVideoInfo(emitter, task.getResult().toString(), deviceToken, username);
+                            }
+                        });
+                        return reference.getDownloadUrl();
+                    }
+                });
+            }
+        }, BackpressureStrategy.BUFFER);
+    }
+
+    public Flowable<UploadTask.TaskSnapshot> uploadVideoAsService(Uri videoUri, String fileType, String deviceToken, String username) {
+        return Flowable.create(new FlowableOnSubscribe<UploadTask.TaskSnapshot>() {
+            @Override
+            public void subscribe(FlowableEmitter<UploadTask.TaskSnapshot> emitter) throws Exception {
+                final StorageReference reference = storageReference.child(Constants.STORAGE_REF + System.currentTimeMillis() + "." + fileType);
+                UploadTask uploadTask = reference.putFile(videoUri);
+                uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onProgress(@NonNull UploadTask.TaskSnapshot snapshot) {
+                        double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
+                        emitter.onNext(snapshot);
                     }
                 }).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                     @Override

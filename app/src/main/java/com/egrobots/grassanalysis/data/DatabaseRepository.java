@@ -5,6 +5,7 @@ import android.net.Uri;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
 
@@ -24,6 +25,10 @@ public class DatabaseRepository {
 
     public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken, String username) {
         return firebaseDataSource.uploadVideo(videoUri, fileType, deviceToken, username);
+    }
+
+    public Flowable<UploadTask.TaskSnapshot> uploadVideoAsService(Uri videoUri, String fileType, String deviceToken, String username) {
+        return firebaseDataSource.uploadVideoAsService(videoUri, fileType, deviceToken, username);
     }
 
     public Flowable<VideoQuestionItem> getAllVideos() {

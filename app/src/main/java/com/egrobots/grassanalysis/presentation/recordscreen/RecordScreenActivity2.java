@@ -2,28 +2,22 @@ package com.egrobots.grassanalysis.presentation.recordscreen;
 
 import android.Manifest;
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.MediaStore;
-import android.util.Log;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.arthenica.mobileffmpeg.Config;
-import com.arthenica.mobileffmpeg.ExecuteCallback;
-import com.arthenica.mobileffmpeg.FFmpeg;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.managers.CameraXRecorder;
+import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.LoadingDialog;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
-
-import java.io.File;
 
 import javax.inject.Inject;
 
@@ -31,15 +25,10 @@ import androidx.annotation.NonNull;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
-import androidx.lifecycle.ViewModelProvider;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
-
-import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL;
-import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 
 public class RecordScreenActivity2 extends DaggerAppCompatActivity implements CameraXRecorder.CameraXCallback {
 
@@ -60,7 +49,6 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     ImageButton videoCaptureButton;
     @BindView(R.id.recorded_time_tv)
     TextView recordedSecondsTV;
-    private RecordScreenViewModel recordScreenViewModel;
     private CameraXRecorder cameraXRecorder;
     private int recordedSeconds;
     private Handler handler = new Handler();
@@ -74,44 +62,15 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         setContentView(R.layout.activity_record_screen2);
         ButterKnife.bind(this);
 
-        recordScreenViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(RecordScreenViewModel.class);
         // Request camera permissions
         if (allPermissionsGranted()) {
             cameraXRecorder = new CameraXRecorder(this, previewView, this);
             cameraXRecorder.setupCameraX();
-            observeStatusChange();
-            observerUploadingProgress();
-        } else {
+      } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
         }
     }
 
-    private void observerUploadingProgress() {
-        recordScreenViewModel.observeUploadingProgress().observe(this, progress -> {
-            loadingDialog.setTitle(getString(R.string.uploaded) + (int) progress.doubleValue() + "%");
-        });
-    }
-
-    private void observeStatusChange() {
-        recordScreenViewModel.observeStatusChange().observe(this, stateResource -> {
-            if (stateResource != null) {
-                switch (stateResource.status) {
-                    case LOADING:
-                        loadingDialog.show(getSupportFragmentManager(), "loading_dialog");
-                        break;
-                    case SUCCESS:
-                        loadingDialog.dismiss();
-                        finish();
-                        Toast.makeText(this, R.string.uploaded_successfully, Toast.LENGTH_SHORT).show();
-                        break;
-                    case ERROR:
-                        loadingDialog.dismiss();
-                        Toast.makeText(this, stateResource.message, Toast.LENGTH_SHORT).show();
-                        break;
-                }
-            }
-        });
-    }
 
     @OnClick(R.id.video_capture_button)
     public void onVideoRecordClicked() {
@@ -151,46 +110,18 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
         handler.removeCallbacks(updateEverySecRunnable);
-        if (!compressVideo) {
-            String fileType = utils.getFieType(videoUri);
-            recordScreenViewModel.uploadVideo(videoUri, fileType);
-        } else {
-            pd = new ProgressDialog(this);
-            pd.setTitle("من فضلك انتظر");
-            pd.show();
-            String input = utils.getPathFromUri(videoUri);
-            String output = utils.getCompressedPath(videoUri);
-            execFFmpegBinary(input, output);
-        }
-
+        String fileType = utils.getFieType(videoUri);
+        startUploadingVideoService(videoUri, fileType);
     }
 
-    private void execFFmpegBinary(String input, String output) {
-        try {
-            Log.i(Config.TAG, "input file path : " + input);
-            Log.i(Config.TAG, "output file path : " + output);
-//            String exe = "-i " + input + " -vf scale=1280:720 " + output;
-//            String exe = "-i " + input + " -vcodec libx265 -crf 18 " + output;
-            String exe = "-i "+ input +" -c:v libx265 -vtag hvc1 -c:a copy " + output;
-            FFmpeg.executeAsync(exe, new ExecuteCallback() {
-                @Override
-                public void apply(long executionId, int returnCode) {
-                    if (returnCode == RETURN_CODE_SUCCESS) {
-                        Uri outputUri = FileProvider.getUriForFile(RecordScreenActivity2.this,
-                                getApplicationContext().getPackageName() + ".provider", new File(output));
-                        String fileType = utils.getFieType(outputUri);
-                        recordScreenViewModel.uploadVideo(outputUri, fileType);
-                    } else if (returnCode == RETURN_CODE_CANCEL) {
-                        Log.i(Config.TAG, "Async command execution cancelled by user.");
-                    } else {
-                        Log.i(Config.TAG, String.format("Async command execution failed with returnCode=%d.", returnCode));
-                    }
-                    pd.dismiss();
-                }
-            });
-        } catch (Exception e) {
-            // Mention to user the command is currently running
-        }
+    private void startUploadingVideoService(Uri videoUri, String fileType) {
+        Intent uploadServiceIntent = new Intent(this, MyUploadService.class);
+        uploadServiceIntent.putExtra(MyUploadService.EXTRA_FILE_URI, videoUri);
+        uploadServiceIntent.putExtra(MyUploadService.FILE_TYPE, fileType);
+        uploadServiceIntent.setAction(MyUploadService.ACTION_UPLOAD);
+        startService(uploadServiceIntent);
+        Toast.makeText(this, R.string.uploading_in_progress, Toast.LENGTH_SHORT).show();
+        finish();
     }
 
     @Override
@@ -217,8 +148,6 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
             if (allPermissionsGranted()) {
                 cameraXRecorder = new CameraXRecorder(this, previewView, this);
                 cameraXRecorder.setupCameraX();
-                observeStatusChange();
-                observerUploadingProgress();
             } else {
                 Toast.makeText(this, "Permissions not granted by the user..", Toast.LENGTH_SHORT).show();
                 finish();
