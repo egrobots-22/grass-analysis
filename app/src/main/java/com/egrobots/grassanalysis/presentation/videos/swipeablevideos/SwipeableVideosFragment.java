@@ -211,13 +211,17 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Override
     public void onPause() {
         super.onPause();
-        exoPlayerVideoManagerCur.pausePlayer();
+        if (exoPlayerVideoManagerCur != null) {
+            exoPlayerVideoManagerCur.pausePlayer();
+        }
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        exoPlayerVideoManagerCur.pausePlayer();
+        if (exoPlayerVideoManagerCur != null) {
+            exoPlayerVideoManagerCur.pausePlayer();
+        }
     }
 
     @Override

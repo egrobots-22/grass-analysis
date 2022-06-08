@@ -2,10 +2,12 @@ package com.egrobots.grassanalysis.managers;
 
 import android.media.AudioAttributes;
 import android.media.AudioManager;
+import android.media.MediaDataSource;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 public class AudioPlayer {
     private MediaPlayer mediaPlayer;
@@ -48,10 +50,16 @@ public class AudioPlayer {
     }
 
     public String getAudioDuration() {
-        MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
-        mediaMetadataRetriever.setDataSource(audioUri);
-        String durationStr = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
-        return formatMilliSeconds(Long.parseLong(durationStr));
+        try {
+            MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
+            mediaMetadataRetriever.setDataSource(audioUri, new HashMap<String, String>());
+            String durationStr = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+            mediaMetadataRetriever.release();
+            return formatMilliSeconds(Long.parseLong(durationStr));
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+        return "0";
     }
 
     private String formatMilliSeconds(long milliseconds) {

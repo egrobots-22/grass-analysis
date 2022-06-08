@@ -34,8 +34,10 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     private static final int REQUEST_CODE_PERMISSIONS = 1;
     private static final int MAX_VID_DURATION = 30;
-    private static final String[] REQUIRED_PERMISSIONS =
-            {Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+    private static final String[] REQUIRED_PERMISSIONS = {Manifest.permission.CAMERA
+                    , Manifest.permission.RECORD_AUDIO
+                    , Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    , Manifest.permission.READ_EXTERNAL_STORAGE};
 
     @Inject
     ViewModelProviderFactory providerFactory;
@@ -53,8 +55,6 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private int recordedSeconds;
     private Handler handler = new Handler();
     private Runnable updateEverySecRunnable;
-    private ProgressDialog pd;
-    private boolean compressVideo = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +66,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         if (allPermissionsGranted()) {
             cameraXRecorder = new CameraXRecorder(this, previewView, this);
             cameraXRecorder.setupCameraX();
-      } else {
+        } else {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
         }
     }

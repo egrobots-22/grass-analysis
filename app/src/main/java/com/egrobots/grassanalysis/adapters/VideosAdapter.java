@@ -1,6 +1,7 @@
 package com.egrobots.grassanalysis.adapters;
 
 import android.content.Context;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -108,7 +109,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             AudioAdapters audioAdapters = new AudioAdapters(databaseRepository);
             audioFilesRecyclerView.setAdapter(audioAdapters);
             audioFilesRecyclerView.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
-            audioAdapters.retrieveAudios(questionItem);
+            new Handler().postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    audioAdapters.retrieveAudios(questionItem);
+                }
+            }, 2000);
         }
     }
 
