@@ -1,13 +1,19 @@
 package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.devlomi.record_view.RecordView;
@@ -15,6 +21,7 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
+import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.StateResource;
@@ -30,6 +37,7 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -49,10 +57,10 @@ public class SwipeableVideosFragment extends DaggerFragment
 
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
-    @BindView(R.id.empty_view_textview)
-    TextView emptyTextView;
     @BindView(R.id.emptyView)
     View emptyView;
+    @BindView(R.id.progress_bar)
+    ProgressBar progressBar;
     @Inject
     ViewModelProviderFactory providerFactory;
     @Inject
@@ -91,10 +99,17 @@ public class SwipeableVideosFragment extends DaggerFragment
         ButterKnife.bind(this, view);
 
         videosAdapter.setRecordAudioCallback(this);
+        videosAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                viewPagerVideos.setCurrentItem(0, true);
+            }
+        });
         viewPagerVideos.setAdapter(videosAdapter);
         viewPagerVideos.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
+                progressBar.setVisibility(View.GONE);
                 if (prevPosition != -1) {
                     exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
                     exoPlayerVideoManagerPrev.pausePlayer();
@@ -102,6 +117,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                 exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
                 exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
                 exoPlayerVideoManagerCur.play();
+                exoPlayerVideoManagerCur.getPlayerView().hideController();
                 prevPosition = position;
             }
 
@@ -124,9 +140,11 @@ public class SwipeableVideosFragment extends DaggerFragment
             public void onChanged(Boolean isDataExists) {
                 if (!isDataExists) {
                     viewPagerVideos.setVisibility(View.GONE);
+                    progressBar.setVisibility(View.GONE);
                     emptyView.setVisibility(View.VISIBLE);
                 } else {
                     viewPagerVideos.setVisibility(View.VISIBLE);
+                    progressBar.setVisibility(View.VISIBLE);
                     emptyView.setVisibility(View.GONE);
                 }
             }
@@ -152,17 +170,13 @@ public class SwipeableVideosFragment extends DaggerFragment
     }
 
     private void observeVideosUris() {
-        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), new Observer<VideoQuestionItem>() {
-            @Override
-            public void onChanged(VideoQuestionItem videoQuestionItem) {
-                if (viewPagerVideos.getVisibility() != View.VISIBLE) {
-                    viewPagerVideos.setVisibility(View.VISIBLE);
-                    emptyView.setVisibility(View.GONE);
-                }
-                videosAdapter.addNewVideo(getContext(), videoQuestionItem);
+        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), videoQuestionItem -> {
+            if (viewPagerVideos.getVisibility() != View.VISIBLE) {
+                viewPagerVideos.setVisibility(View.VISIBLE);
+                emptyView.setVisibility(View.GONE);
             }
+            videosAdapter.addNewVideo(getContext(), videoQuestionItem);
         });
-
     }
 
     @Override
@@ -235,7 +249,7 @@ public class SwipeableVideosFragment extends DaggerFragment
 
     @Override
     public void onPrepare() {
-
+        progressBar.setVisibility(View.GONE);
     }
 
     @Override

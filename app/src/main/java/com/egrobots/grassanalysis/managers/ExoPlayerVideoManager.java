@@ -4,7 +4,9 @@ import android.util.Log;
 
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
+import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
 
 import static androidx.media3.common.Player.STATE_ENDED;
@@ -17,7 +19,7 @@ public class ExoPlayerVideoManager {
     private boolean playWhenReady = true;
     private int currentItem = 0;
     private long playbackPosition = 0L;
-    private boolean isShuffleEnabled = true;
+    private boolean isRepeatEnabled = false;
     private VideoManagerCallback videoManagerCallback;
 
     public void setExoPlayer(ExoPlayer exoPlayer, String videoUri) {
@@ -46,6 +48,7 @@ public class ExoPlayerVideoManager {
         exoPlayer.setMediaItem(mediaItem);
         exoPlayer.setPlayWhenReady(playWhenReady);
         exoPlayer.seekTo(currentItem, playbackPosition);
+        exoPlayer.setRepeatMode(Player.REPEAT_MODE_ONE);
         exoPlayer.prepare();
         exoPlayer.pause();
         exoPlayer.addListener(new Player.Listener() {
@@ -53,19 +56,11 @@ public class ExoPlayerVideoManager {
             public void onPlaybackStateChanged(int playbackState) {
                 switch (playbackState) {
                     case STATE_READY:
+//                        videoManagerCallback.onPrepare();
                         Log.i("VIDEO READY", "onPlaybackStateChanged: STATE_READY");
                         break;
                     case STATE_ENDED:
                         Log.i("VIDEO ENDED", "onPlaybackStateChanged: STATE_ENDED");
-                        playerView.hideController();
-                        if (isShuffleEnabled) {
-                            //to restart video again after end
-                            exoPlayer.seekTo(0, 0);
-                        } else {
-                            //to scroll to next video
-                            videoManagerCallback.onEnd();
-                        }
-                        exoPlayer.play();
                         break;
                     case Player.STATE_BUFFERING:
                         Log.i("VIDEO BUFFERING", "onPlaybackStateChanged: STATE_BUFFERING");
@@ -75,6 +70,18 @@ public class ExoPlayerVideoManager {
                         break;
                 }
             }
+            @Override
+            public void onVideoSizeChanged(VideoSize videoSize) {
+                int ratio = videoSize.width / videoSize.height;
+                //vertical video
+                if (ratio < 1) {
+                    playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL);
+                }
+                //horizontal video
+                else {
+                    playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
+                }
+            }
         });
     }
 
@@ -82,6 +89,10 @@ public class ExoPlayerVideoManager {
         playerView.setPlayer(exoPlayer);
         playerView.hideController();
         this.playerView = playerView;
+    }
+
+    public PlayerView getPlayerView() {
+        return playerView;
     }
 
     public boolean isPlaying() {

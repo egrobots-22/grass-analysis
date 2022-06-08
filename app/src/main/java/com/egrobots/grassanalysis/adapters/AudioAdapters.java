@@ -5,6 +5,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
@@ -14,6 +15,11 @@ import com.egrobots.grassanalysis.managers.AudioPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -44,9 +50,13 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
 
     @Override
     public void onBindViewHolder(@NonNull AudioViewHolder holder, int position) {
-        AudioAnswer audioAnswer = audioAnswers.get(position);
-        holder.audioNameTextView.setText(audioAnswer.getRecordedUser());
-        holder.audioLengthTextView.setText(holder.setAudioUri(audioAnswer.getAudioUri()));
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+        executorService.submit(() -> {
+            AudioAnswer audioAnswer = audioAnswers.get(position);
+            holder.audioNameTextView.setText(audioAnswer.getRecordedUser());
+            holder.audioLengthTextView.setText(holder.setAudioUri(audioAnswer.getAudioUri()));
+            executorService.shutdown();
+        });
     }
 
     @Override
@@ -107,10 +117,6 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             audioPlayer = new AudioPlayer();
             audioPlayer.setAudio(audioUri, this);
             return audioPlayer.getAudioDuration();
-        }
-
-        private void getAudioDuration() {
-            audioPlayer.getAudioDuration();
         }
 
         @OnClick(R.id.pauseButton)

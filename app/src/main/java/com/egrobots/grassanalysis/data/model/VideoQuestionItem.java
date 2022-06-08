@@ -1,5 +1,6 @@
 package com.egrobots.grassanalysis.data.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class VideoQuestionItem {
@@ -8,6 +9,7 @@ public class VideoQuestionItem {
     private String videoQuestionUri;
     private String username;
     private List<String> audioAnswerUri;
+    private long timestamp;
 
     public String getId() {
         return id;
@@ -48,4 +50,14 @@ public class VideoQuestionItem {
     public void setAudioAnswerUri(List<String> audioAnswerUri) {
         this.audioAnswerUri = audioAnswerUri;
     }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+
 }

@@ -23,7 +23,11 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -42,6 +46,9 @@ public class FirebaseDataSource {
     private static final String TAG = "FirebaseDataSource";
     private StorageReference storageReference;
     private FirebaseDatabase firebaseDatabase;
+    private int childCount;
+    private int childRetrievedCount;
+    private List<VideoQuestionItem> items = new ArrayList<>();
 
     @Inject
     public FirebaseDataSource(StorageReference storageReference, FirebaseDatabase firebaseDatabase) {
@@ -54,6 +61,7 @@ public class FirebaseDataSource {
         VideoQuestionItem videoQuestionItem = new VideoQuestionItem();
         videoQuestionItem.setVideoQuestionUri(videoUri);
         videoQuestionItem.setUsername(username);
+        videoQuestionItem.setTimestamp(System.currentTimeMillis());
         reference1.child(deviceToken).push().setValue(videoQuestionItem).addOnCompleteListener(new OnCompleteListener<Void>() {
             @Override
             public void onComplete(@NonNull Task<Void> task) {
@@ -229,6 +237,7 @@ public class FirebaseDataSource {
         return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
             @Override
             public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
+
                 final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
                 //check firstly if there is data exists
                 videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -239,11 +248,14 @@ public class FirebaseDataSource {
                             for (DataSnapshot deviceSnapshot : snapshot.getChildren()) {
                                 if (!deviceSnapshot.getKey().equals(deviceToken)) {
                                     otherDataExists = true;
-                                    break;
+                                    childCount++;
+//                                    break;
                                 }
                             }
                             if (!otherDataExists) {
                                 emitter.onNext(new VideoQuestionItem());
+                            } else {
+                                videosRef.addChildEventListener(new RetrieveOtherVideosChildEventListener(deviceToken, emitter));
                             }
                         } else {
                             emitter.onNext(new VideoQuestionItem());
@@ -255,39 +267,7 @@ public class FirebaseDataSource {
 
                     }
                 });
-                videosRef.addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                        if (!deviceToken.equals(snapshot.getKey())) {
-                            for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
-                                VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
-                                videoQuestionItem.setId(questionSnapshot.getKey());
-                                videoQuestionItem.setDeviceToken(snapshot.getKey());
-                                emitter.onNext(videoQuestionItem);
-                            }
-                        }
-                    }
 
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                    }
-
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-
-                    }
-
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
-                    }
-                });
             }
         }, BackpressureStrategy.BUFFER);
     }
@@ -385,4 +365,57 @@ public class FirebaseDataSource {
             }
         }, BackpressureStrategy.BUFFER);
     }
+
+    class RetrieveOtherVideosChildEventListener implements ChildEventListener {
+
+        private String deviceToken;
+        private FlowableEmitter<VideoQuestionItem> emitter;
+
+        RetrieveOtherVideosChildEventListener(String deviceToken, FlowableEmitter<VideoQuestionItem> emitter) {
+            this.deviceToken = deviceToken;
+            this.emitter = emitter;
+        }
+
+        @Override
+        public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+            if (!deviceToken.equals(snapshot.getKey())) {
+                for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
+                    VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
+                    videoQuestionItem.setId(questionSnapshot.getKey());
+                    videoQuestionItem.setDeviceToken(snapshot.getKey());
+                    items.add(videoQuestionItem);
+//                    emitter.onNext(videoQuestionItem);
+                }
+                childRetrievedCount++;
+                if (childCount == childRetrievedCount) {
+                    Collections.sort(items, Comparator.comparing(VideoQuestionItem::getTimestamp));
+//                    Collections.reverse(items);
+                    for (VideoQuestionItem item : items) {
+                        emitter.onNext(item);
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+        }
+
+        @Override
+        public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+        }
+
+        @Override
+        public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+        }
+
+        @Override
+        public void onCancelled(@NonNull DatabaseError error) {
+
+        }
+    };
 }

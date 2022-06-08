@@ -1,12 +1,10 @@
 package com.egrobots.grassanalysis.adapters;
 
 import android.content.Context;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
@@ -63,11 +61,11 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
     public void addNewVideo(Context context, VideoQuestionItem videoQuestionItem) {
         videoQuestionItems.add(0, videoQuestionItem);
-        notifyDataSetChanged();
+        notifyItemInserted(0);
         ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
         ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
         exoPlayerVideoManager.setExoPlayer(exoPlayer, videoQuestionItem.getVideoQuestionUri());
-        managers.add(exoPlayerVideoManager);
+        managers.add(0, exoPlayerVideoManager);
     }
 
     public ExoPlayerVideoManager getCurrentExoPlayerManager(int position) {
@@ -109,12 +107,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             AudioAdapters audioAdapters = new AudioAdapters(databaseRepository);
             audioFilesRecyclerView.setAdapter(audioAdapters);
             audioFilesRecyclerView.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
-            new Handler().postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    audioAdapters.retrieveAudios(questionItem);
-                }
-            }, 2000);
+            audioAdapters.retrieveAudios(questionItem);
         }
     }
 

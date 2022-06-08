@@ -14,4 +14,5 @@ public class Constants {
     public static final String VIDEO_FILE_TYPE = ".mp4";
     public static final String NO_DATA = "no_data";
     public static final String USER_NAME = "user_name";
+    public static final String TIME_STAMP = "time_stamp";
 }
