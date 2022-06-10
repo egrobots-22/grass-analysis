@@ -68,6 +68,17 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         managers.add(0, exoPlayerVideoManager);
     }
 
+    public void addAll(Context context, List<VideoQuestionItem> itemsList) {
+        videoQuestionItems.addAll(itemsList);
+        for (VideoQuestionItem item : itemsList) {
+            ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
+            ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
+            exoPlayerVideoManager.setExoPlayer(exoPlayer, item.getVideoQuestionUri());
+            managers.add(exoPlayerVideoManager);
+        }
+        notifyDataSetChanged();
+    }
+
     public ExoPlayerVideoManager getCurrentExoPlayerManager(int position) {
         return managers.get(position);
     }

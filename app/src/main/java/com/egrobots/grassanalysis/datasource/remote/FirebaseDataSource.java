@@ -15,6 +15,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnProgressListener;
@@ -23,11 +24,8 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
+import java.util.stream.StreamSupport;
 
 import javax.inject.Inject;
 
@@ -40,15 +38,17 @@ import io.reactivex.CompletableOnSubscribe;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
 import io.reactivex.FlowableOnSubscribe;
+import io.reactivex.Single;
 
 public class FirebaseDataSource {
 
     private static final String TAG = "FirebaseDataSource";
+    private static final int LIMIT_ITEM_COUNT = 2;
+
     private StorageReference storageReference;
     private FirebaseDatabase firebaseDatabase;
-    private int childCount;
-    private int childRetrievedCount;
-    private List<VideoQuestionItem> items = new ArrayList<>();
+    private int sentItemsCount;
+    private int count;
 
     @Inject
     public FirebaseDataSource(StorageReference storageReference, FirebaseDatabase firebaseDatabase) {
@@ -57,21 +57,23 @@ public class FirebaseDataSource {
     }
 
     private void saveVideoInfo(FlowableEmitter emitter, String videoUri, String deviceToken, String username) {
-        DatabaseReference reference1 = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
+        DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
         VideoQuestionItem videoQuestionItem = new VideoQuestionItem();
         videoQuestionItem.setVideoQuestionUri(videoUri);
         videoQuestionItem.setUsername(username);
-        videoQuestionItem.setTimestamp(System.currentTimeMillis());
-        reference1.child(deviceToken).push().setValue(videoQuestionItem).addOnCompleteListener(new OnCompleteListener<Void>() {
-            @Override
-            public void onComplete(@NonNull Task<Void> task) {
-                if (task.isSuccessful()) {
-                    emitter.onComplete();
-                } else {
-                    emitter.onError(task.getException());
-                }
+        videoQuestionItem.setTimestamp(-System.currentTimeMillis());
+        videoQuestionItem.setDeviceToken(deviceToken);
+        videosRef.push().setValue(videoQuestionItem).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                emitter.onComplete();
+            } else {
+                emitter.onError(task.getException());
             }
         });
+
+        DatabaseReference devicesRef = firebaseDatabase.getReference("devices");
+        devicesRef.child(deviceToken).setValue(true);
+
     }
 
     public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken, String username) {
@@ -140,135 +142,169 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Flowable<VideoQuestionItem> getAllVideos() {
-        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
-            @Override
-            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
-                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
-                videosRef.addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                        for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
-                            VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
-                            videoQuestionItem.setId(questionSnapshot.getKey());
-                            emitter.onNext(videoQuestionItem);
-                        }
-                    }
+    public Single<Boolean> isCurrentUserVideosFound(String deviceToken) {
+        return Single.create(emitter -> {
+            final DatabaseReference devicesRef = firebaseDatabase
+                    .getReference("devices")
+                    .child(deviceToken);
+            devicesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    boolean exist = snapshot.exists() && snapshot.getValue() != null;
+                    emitter.onSuccess(exist);
+                }
 
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                    }
-
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-
-                    }
-
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
-                    }
-                });
-            }
-        }, BackpressureStrategy.BUFFER);
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    emitter.onError(error.toException());
+                }
+            });
+        });
     }
 
     public Flowable<VideoQuestionItem> getCurrentUserVideos(String deviceToken) {
-        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
-            @Override
-            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
-                final DatabaseReference videosRef = firebaseDatabase
-                        .getReference(Constants.QUESTIONS_NODE)
-                        .child(deviceToken);
-                //check firstly if there is data exists
-                videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (!snapshot.exists() || !snapshot.hasChildren()) {
-                            emitter.onNext(new VideoQuestionItem());
-                        }
-                    }
+        return Flowable.create(emitter -> {
+            final Query videosQuery = firebaseDatabase
+                    .getReference(Constants.QUESTIONS_NODE)
+                    .orderByChild("deviceToken")
+                    .equalTo(deviceToken)
+                    .limitToLast(LIMIT_ITEM_COUNT);
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+            videosQuery.addChildEventListener(new ChildEventListener() {
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
+                    VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
+                    videoQuestionItem.setId(questionSnapshot.getKey());
+                    videoQuestionItem.setDeviceToken(deviceToken);
+                    emitter.onNext(videoQuestionItem);
+                }
 
-                    }
-                });
-                videosRef.addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
-                        VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
-                        videoQuestionItem.setId(questionSnapshot.getKey());
-                        videoQuestionItem.setDeviceToken(deviceToken);
-                        emitter.onNext(videoQuestionItem);
-                    }
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                }
 
-                    }
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                    Log.e(TAG, "onChildRemoved: " + snapshot.getValue());
+                }
 
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    }
+                }
 
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                    }
-
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
-
-                    }
-                });
-            }
+                }
+            });
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken) {
-        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
-            @Override
-            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
-
-                final DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
-                //check firstly if there is data exists
-                videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.hasChildren()) {
-                            boolean otherDataExists = false;
-                            for (DataSnapshot deviceSnapshot : snapshot.getChildren()) {
-                                if (!deviceSnapshot.getKey().equals(deviceToken)) {
-                                    otherDataExists = true;
-                                    childCount++;
-//                                    break;
-                                }
+    public Single<Boolean> isOtherVideosFound(String deviceToken) {
+        return Single.create(emitter -> {
+            final DatabaseReference devicesRef = firebaseDatabase.getReference("devices");
+            devicesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    boolean found = false;
+                    if (snapshot.hasChildren()) {
+                        for (DataSnapshot deviceSnapshot : snapshot.getChildren()) {
+                            if (!deviceSnapshot.getKey().equals(deviceToken)) {
+                                found = true;
+                                break;
                             }
-                            if (!otherDataExists) {
-                                emitter.onNext(new VideoQuestionItem());
-                            } else {
-                                videosRef.addChildEventListener(new RetrieveOtherVideosChildEventListener(deviceToken, emitter));
-                            }
-                        } else {
-                            emitter.onNext(new VideoQuestionItem());
                         }
+                        emitter.onSuccess(found);
+                        devicesRef.removeEventListener(this);
+                    } else {
+                        emitter.onSuccess(false);
                     }
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+                    emitter.onError(error.toException());
+                }
+            });
+        });
+    }
 
-                    }
-                });
-
+    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimeStamp) {
+        return Flowable.create(emitter -> {
+            count = 0;
+            sentItemsCount = 0;
+            Query videoQuery;
+            if (lastTimeStamp != null) {
+                videoQuery = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .orderByChild("timestamp")
+                        .startAt(lastTimeStamp)
+                        .limitToFirst(LIMIT_ITEM_COUNT);
+            } else {
+                videoQuery = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .orderByChild("timestamp")
+                        .limitToFirst(LIMIT_ITEM_COUNT);
             }
+            //get count of retrieved videos firstly to check if there size smaller than the limit
+            videoQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    int size = Long.valueOf(StreamSupport.stream(snapshot.getChildren().spliterator(), false).count()).intValue();
+                    videoQuery.addChildEventListener(new ChildEventListener() {
+                        @Override
+                        public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
+                            VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
+                            videoQuestionItem.setId(questionSnapshot.getKey());
+                            if (!videoQuestionItem.getDeviceToken().equals(deviceToken)) {
+                                emitter.onNext(videoQuestionItem);
+                                sentItemsCount++;
+                            }
+                            count++;
+
+                            if (size < LIMIT_ITEM_COUNT && sentItemsCount == size) {
+                                emitter.onComplete();
+                            } else if (count == LIMIT_ITEM_COUNT && sentItemsCount == LIMIT_ITEM_COUNT) {
+                                emitter.onComplete();
+                            } else if (count == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
+                                //retrieve data again
+                                videoQuestionItem.setId(null);
+                                emitter.onNext(videoQuestionItem);
+                            } else if (count == LIMIT_ITEM_COUNT && sentItemsCount < LIMIT_ITEM_COUNT) {
+                                emitter.onComplete();
+                            }
+                        }
+
+                        @Override
+                        public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                        }
+
+                        @Override
+                        public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+
+                        }
+
+                        @Override
+                        public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+
+                    });
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
+
+                }
+            });
         }, BackpressureStrategy.BUFFER);
     }
 
@@ -288,7 +324,6 @@ public class FirebaseDataSource {
                             String url = path.getResult().toString();
                             DatabaseReference audioRef = FirebaseDatabase.getInstance()
                                     .getReference(Constants.QUESTIONS_NODE)
-                                    .child(questionItem.getDeviceToken())
                                     .child(questionItem.getId())
                                     .child(Constants.ANSWERS_NODE);
 
@@ -327,7 +362,6 @@ public class FirebaseDataSource {
             public void subscribe(FlowableEmitter<AudioAnswer> emitter) throws Exception {
                 DatabaseReference databaseReference = FirebaseDatabase.getInstance()
                         .getReference(Constants.QUESTIONS_NODE)
-                        .child(questionItem.getDeviceToken())
                         .child(questionItem.getId())
                         .child(Constants.ANSWERS_NODE);
                 databaseReference.addChildEventListener(new ChildEventListener() {
@@ -366,56 +400,48 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    class RetrieveOtherVideosChildEventListener implements ChildEventListener {
+    /*
+     ** old
+     */
+    public Flowable<VideoQuestionItem> getOtherUsersVideosOld(String deviceToken) {
+        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
+            @Override
+            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
 
-        private String deviceToken;
-        private FlowableEmitter<VideoQuestionItem> emitter;
-
-        RetrieveOtherVideosChildEventListener(String deviceToken, FlowableEmitter<VideoQuestionItem> emitter) {
-            this.deviceToken = deviceToken;
-            this.emitter = emitter;
-        }
-
-        @Override
-        public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-            if (!deviceToken.equals(snapshot.getKey())) {
-                for (DataSnapshot questionSnapshot : snapshot.getChildren()) {
-                    VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
-                    videoQuestionItem.setId(questionSnapshot.getKey());
-                    videoQuestionItem.setDeviceToken(snapshot.getKey());
-                    items.add(videoQuestionItem);
-//                    emitter.onNext(videoQuestionItem);
-                }
-                childRetrievedCount++;
-                if (childCount == childRetrievedCount) {
-                    Collections.sort(items, Comparator.comparing(VideoQuestionItem::getTimestamp));
-//                    Collections.reverse(items);
-                    for (VideoQuestionItem item : items) {
-                        emitter.onNext(item);
+                final DatabaseReference videosRef = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE);
+                //check firstly if there is data exists
+                videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.hasChildren()) {
+                            boolean otherDataExists = false;
+                            for (DataSnapshot deviceSnapshot : snapshot.getChildren()) {
+                                if (!deviceSnapshot.getKey().equals(deviceToken)) {
+                                    otherDataExists = true;
+//                                    childCount++;
+//                                    break;
+                                }
+                            }
+                            if (!otherDataExists) {
+                                //send item object with empty data to trigger no data screen
+                                emitter.onNext(new VideoQuestionItem());
+                            } else {
+//                                videosRef.addChildEventListener(new RetrieveOtherVideosChildEventListener(deviceToken, null, emitter));
+                            }
+                        } else {
+                            emitter.onNext(new VideoQuestionItem());
+                        }
                     }
-                }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
+
             }
-        }
+        }, BackpressureStrategy.BUFFER);
+    }
 
-        @Override
-        public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-        }
-
-        @Override
-        public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-
-        }
-
-        @Override
-        public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-
-        }
-
-        @Override
-        public void onCancelled(@NonNull DatabaseError error) {
-
-        }
-    };
 }

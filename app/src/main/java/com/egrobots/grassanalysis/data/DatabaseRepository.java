@@ -13,6 +13,7 @@ import javax.inject.Inject;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 public class DatabaseRepository {
 
@@ -31,16 +32,12 @@ public class DatabaseRepository {
         return firebaseDataSource.uploadVideoAsService(videoUri, fileType, deviceToken, username);
     }
 
-    public Flowable<VideoQuestionItem> getAllVideos() {
-        return firebaseDataSource.getAllVideos();
-    }
-
     public Flowable<VideoQuestionItem> getCurrentUserVideos(String deviceToken) {
         return firebaseDataSource.getCurrentUserVideos(deviceToken);
     }
 
-    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken) {
-        return firebaseDataSource.getOtherUsersVideos(deviceToken);
+    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimestamp) {
+        return firebaseDataSource.getOtherUsersVideos(deviceToken, lastTimestamp);
     }
 
     public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem, String username) {
@@ -49,5 +46,13 @@ public class DatabaseRepository {
 
     public Flowable<AudioAnswer> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
         return firebaseDataSource.getRecordedAudiosForQuestion(questionItem);
+    }
+
+    public Single<Boolean> isOtherVideosFound(String deviceToken) {
+        return firebaseDataSource.isOtherVideosFound(deviceToken);
+    }
+
+    public Single<Boolean> isCurrentUserVideosFound(String deviceToken) {
+        return firebaseDataSource.isCurrentUserVideosFound(deviceToken);
     }
 }

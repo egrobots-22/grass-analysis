@@ -1,15 +1,9 @@
 package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,13 +15,14 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
-import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.StateResource;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -37,7 +32,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -66,12 +60,13 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Inject
     VideosAdapter videosAdapter;
 
+    private List<VideoQuestionItem> itemsList = new ArrayList<>();
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
-    private boolean isScrolled = false;
     private ExoPlayerVideoManager exoPlayerVideoManagerPrev;
     private ExoPlayerVideoManager exoPlayerVideoManagerCur;
     private int prevPosition = -1;
+    private long lastTimestamp;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -99,12 +94,6 @@ public class SwipeableVideosFragment extends DaggerFragment
         ButterKnife.bind(this, view);
 
         videosAdapter.setRecordAudioCallback(this);
-        videosAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
-            @Override
-            public void onItemRangeInserted(int positionStart, int itemCount) {
-                viewPagerVideos.setCurrentItem(0, true);
-            }
-        });
         viewPagerVideos.setAdapter(videosAdapter);
         viewPagerVideos.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
@@ -116,24 +105,32 @@ public class SwipeableVideosFragment extends DaggerFragment
                 }
                 exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
                 exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
-                exoPlayerVideoManagerCur.play();
                 exoPlayerVideoManagerCur.getPlayerView().hideController();
+                exoPlayerVideoManagerCur.play();
                 prevPosition = position;
+                if (!isCurrentUser) {
+                    //get next block of videos
+                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1);
+                }
             }
-
         });
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
+        observeExistVideosState();
         observeVideosUris();
         observeUploadingRecordedAudio();
-        observeExistVideosState();
         if (isCurrentUser) {
+            swipeableVideosViewModel.isCurrentUserVideosFound();
             swipeableVideosViewModel.getCurrentUserVideos();
         } else {
-            swipeableVideosViewModel.getOtherUsersVideos();
+            swipeableVideosViewModel.isOtherVideosFound();
+            swipeableVideosViewModel.getNextOtherUsersVideos(null);
         }
         return view;
     }
 
+    /*
+    observing videos
+     */
     private void observeExistVideosState() {
         swipeableVideosViewModel.observeExistVideosState().observe(getViewLifecycleOwner(), new Observer<Boolean>() {
             @Override
@@ -149,6 +146,42 @@ public class SwipeableVideosFragment extends DaggerFragment
                 }
             }
         });
+    }
+
+    private void observeVideosUris() {
+        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), videoQuestionItem -> {
+            if (emptyView.getVisibility() == View.VISIBLE) {
+                viewPagerVideos.setVisibility(View.VISIBLE);
+                progressBar.setVisibility(View.VISIBLE);
+                emptyView.setVisibility(View.GONE);
+            }
+            if (videoQuestionItem != null && videoQuestionItem.getId() != null) {
+                lastTimestamp = videoQuestionItem.getTimestamp();
+                itemsList.add(videoQuestionItem);
+                if (isCurrentUser) {
+                    videosAdapter.addNewVideo(getContext(), videoQuestionItem);
+                }
+            }
+            /*
+            videos retrieved but we don't need to show it as they are videos of same device,
+            so send request again
+             */
+            else if (videoQuestionItem != null && videoQuestionItem.getId() == null) {
+                swipeableVideosViewModel.getNextOtherUsersVideos(videoQuestionItem.getTimestamp() + 1);
+            } else {
+                //add retrieved videos to view pager
+                videosAdapter.addAll(getContext(), itemsList);
+                itemsList = new ArrayList<>();
+            }
+        });
+    }
+
+    /*
+    recording audios
+     */
+    @Override
+    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
+        swipeableVideosViewModel.uploadRecordedAudio(recordFile, questionItem);
     }
 
     private void observeUploadingRecordedAudio() {
@@ -167,21 +200,6 @@ public class SwipeableVideosFragment extends DaggerFragment
                 }
             }
         });
-    }
-
-    private void observeVideosUris() {
-        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), videoQuestionItem -> {
-            if (viewPagerVideos.getVisibility() != View.VISIBLE) {
-                viewPagerVideos.setVisibility(View.VISIBLE);
-                emptyView.setVisibility(View.GONE);
-            }
-            videosAdapter.addNewVideo(getContext(), videoQuestionItem);
-        });
-    }
-
-    @Override
-    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
-        swipeableVideosViewModel.uploadRecordedAudio(recordFile, questionItem);
     }
 
     @Override
