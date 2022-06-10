@@ -73,7 +73,6 @@ public class FirebaseDataSource {
 
         DatabaseReference devicesRef = firebaseDatabase.getReference("devices");
         devicesRef.child(deviceToken).setValue(true);
-
     }
 
     public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken, String username) {
@@ -231,12 +230,23 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimeStamp) {
+    public Flowable<VideoQuestionItem> getVideos3(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
+        return Flowable.create(emitter -> {
+
+        }, BackpressureStrategy.BUFFER);
+    }
+
+    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
         return Flowable.create(emitter -> {
             count = 0;
             sentItemsCount = 0;
             Query videoQuery;
-            if (lastTimeStamp != null) {
+            if (newUploadedVideo) {
+                videoQuery = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .orderByChild("timestamp")
+                        .limitToFirst(1);
+            } else if (lastTimeStamp != null) {
                 videoQuery = firebaseDatabase
                         .getReference(Constants.QUESTIONS_NODE)
                         .orderByChild("timestamp")
@@ -253,18 +263,29 @@ public class FirebaseDataSource {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     int size = Long.valueOf(StreamSupport.stream(snapshot.getChildren().spliterator(), false).count()).intValue();
+                    if (size == 0) {
+                        emitter.onNext(new VideoQuestionItem());
+                        return;
+                    }
                     videoQuery.addChildEventListener(new ChildEventListener() {
                         @Override
                         public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
                             VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
                             videoQuestionItem.setId(questionSnapshot.getKey());
-                            if (!videoQuestionItem.getDeviceToken().equals(deviceToken)) {
-                                emitter.onNext(videoQuestionItem);
-                                sentItemsCount++;
+                            if (isCurrentUser) {
+                                if (videoQuestionItem.getDeviceToken().equals(deviceToken)) {
+                                    emitter.onNext(videoQuestionItem);
+                                    sentItemsCount++;
+                                }
+                            } else {
+                                if (!videoQuestionItem.getDeviceToken().equals(deviceToken)) {
+                                    emitter.onNext(videoQuestionItem);
+                                    sentItemsCount++;
+                                }
                             }
                             count++;
 
-                            if (size < LIMIT_ITEM_COUNT && sentItemsCount == size) {
+                            if (size < LIMIT_ITEM_COUNT && count == size) {
                                 emitter.onComplete();
                             } else if (count == LIMIT_ITEM_COUNT && sentItemsCount == LIMIT_ITEM_COUNT) {
                                 emitter.onComplete();
@@ -273,6 +294,8 @@ public class FirebaseDataSource {
                                 videoQuestionItem.setId(null);
                                 emitter.onNext(videoQuestionItem);
                             } else if (count == LIMIT_ITEM_COUNT && sentItemsCount < LIMIT_ITEM_COUNT) {
+                                emitter.onComplete();
+                            } else if (count <= sentItemsCount && count == size) {
                                 emitter.onComplete();
                             }
                         }

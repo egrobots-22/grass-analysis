@@ -36,8 +36,8 @@ public class DatabaseRepository {
         return firebaseDataSource.getCurrentUserVideos(deviceToken);
     }
 
-    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimestamp) {
-        return firebaseDataSource.getOtherUsersVideos(deviceToken, lastTimestamp);
+    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
+        return firebaseDataSource.getOtherUsersVideos(deviceToken, lastTimestamp, isCurrentUser, newVideoUploaded);
     }
 
     public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem, String username) {

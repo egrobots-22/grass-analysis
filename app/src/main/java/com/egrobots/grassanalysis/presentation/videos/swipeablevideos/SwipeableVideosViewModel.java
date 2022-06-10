@@ -113,8 +113,8 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public void getNextOtherUsersVideos(Long lastTimestamp) {
-        databaseRepository.getOtherUsersVideos(localDataRepository.getDeviceToken(), lastTimestamp)
+    public void getNextOtherUsersVideos(Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
+        databaseRepository.getOtherUsersVideos(localDataRepository.getDeviceToken(), lastTimestamp, isCurrentUser, newVideoUploaded)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()
@@ -126,7 +126,11 @@ public class SwipeableVideosViewModel extends ViewModel {
 
                     @Override
                     public void onNext(VideoQuestionItem questionItem) {
-                        videoUris.setValue(questionItem);
+                        if (questionItem.getVideoQuestionUri() == null) {
+                            videoUris.setValue(null);
+                        } else {
+                            videoUris.setValue(questionItem);
+                        }
                     }
 
                     @Override
