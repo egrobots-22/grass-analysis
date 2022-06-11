@@ -108,10 +108,10 @@ public class SwipeableVideosFragment extends DaggerFragment
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (MyUploadService.UPLOAD_COMPLETED.equals(Objects.requireNonNull(intent.getAction()))) {
-                    newVideoUploaded = true;
+//                    newVideoUploaded = true;
                     Toast.makeText(getContext(), "New Video is uploaded", Toast.LENGTH_SHORT).show();
-                    swipeableVideosViewModel.isOtherVideosFound();
-                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp - 1, isCurrentUser, true);
+//                    swipeableVideosViewModel.isOtherVideosFound();
+//                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp - 1, isCurrentUser, true);
                 }
             }
         };
@@ -142,19 +142,17 @@ public class SwipeableVideosFragment extends DaggerFragment
                     if (newVideoUploaded) newVideoUploaded = false;
                 }
                 prevPosition = position;
-//                if (!isCurrentUser) {
-//                }
             }
         });
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
-        observeExistVideosState();
+//        observeExistVideosState();
         observeVideosUris();
         observeUploadingRecordedAudio();
         if (isCurrentUser) {
-            swipeableVideosViewModel.isCurrentUserVideosFound();
+//            swipeableVideosViewModel.isCurrentUserVideosFound();
             swipeableVideosViewModel.getNextOtherUsersVideos(null, isCurrentUser, false);
         } else {
-            swipeableVideosViewModel.isOtherVideosFound();
+//            swipeableVideosViewModel.isOtherVideosFound();
             swipeableVideosViewModel.getNextOtherUsersVideos(null, isCurrentUser, false);
         }
         return view;
@@ -188,9 +186,9 @@ public class SwipeableVideosFragment extends DaggerFragment
                 emptyView.setVisibility(View.GONE);
             }
             if (videoQuestionItem != null && videoQuestionItem.getId() != null) {
-                if (newVideoUploaded) {
+//                if (!newVideoUploaded) {
                     lastTimestamp = videoQuestionItem.getTimestamp();
-                }
+//                }
                 itemsList.add(videoQuestionItem);
                 latestVideoItem = videoQuestionItem;
             }
@@ -206,7 +204,13 @@ public class SwipeableVideosFragment extends DaggerFragment
                     videosAdapter.addNewVideo(getContext(), itemsList.get(0));
                 } else {
                     if (itemsList.size() == 0) {
-                        Toast.makeText(getContext(), "no new videos", Toast.LENGTH_SHORT).show();
+                        if (videosAdapter.getItemCount()==0) {
+                            viewPagerVideos.setVisibility(View.GONE);
+                            progressBar.setVisibility(View.GONE);
+                            emptyView.setVisibility(View.VISIBLE);
+                        } else {
+                            Toast.makeText(getContext(), "no new videos", Toast.LENGTH_SHORT).show();
+                        }
                     } else {
                         videosAdapter.addAll(getContext(), itemsList);
                     }
