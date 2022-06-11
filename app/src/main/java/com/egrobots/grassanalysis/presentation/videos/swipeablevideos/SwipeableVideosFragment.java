@@ -104,19 +104,19 @@ public class SwipeableVideosFragment extends DaggerFragment
 
         videosAdapter.setRecordAudioCallback(this);
         viewPagerVideos.setAdapter(videosAdapter);
-        mBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (MyUploadService.UPLOAD_COMPLETED.equals(Objects.requireNonNull(intent.getAction()))) {
+//        mBroadcastReceiver = new BroadcastReceiver() {
+//            @Override
+//            public void onReceive(Context context, Intent intent) {
+//                if (MyUploadService.UPLOAD_COMPLETED.equals(Objects.requireNonNull(intent.getAction()))) {
 //                    newVideoUploaded = true;
-                    Toast.makeText(getContext(), "New Video is uploaded", Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(getContext(), "New Video is uploaded", Toast.LENGTH_SHORT).show();
 //                    swipeableVideosViewModel.isOtherVideosFound();
 //                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp - 1, isCurrentUser, true);
-                }
-            }
-        };
-        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(getContext());
-        manager.registerReceiver(mBroadcastReceiver, MyUploadService.getIntentFilter());
+//                }
+//            }
+//        };
+//        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(getContext());
+//        manager.registerReceiver(mBroadcastReceiver, MyUploadService.getIntentFilter());
 
         viewPagerVideos.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override

@@ -63,8 +63,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         videoQuestionItems.add(0, videoQuestionItem);
         notifyItemInserted(0);
         ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
-        ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
-        exoPlayerVideoManager.setExoPlayer(exoPlayer, videoQuestionItem.getVideoQuestionUri());
+//        ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
+        exoPlayerVideoManager.initializeExoPlayer(context, videoQuestionItem.getVideoQuestionUri());
         managers.add(0, exoPlayerVideoManager);
     }
 
@@ -72,8 +72,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         videoQuestionItems.addAll(itemsList);
         for (VideoQuestionItem item : itemsList) {
             ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
-            ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
-            exoPlayerVideoManager.setExoPlayer(exoPlayer, item.getVideoQuestionUri());
+//            ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
+            exoPlayerVideoManager.initializeExoPlayer(context, item.getVideoQuestionUri());
             managers.add(exoPlayerVideoManager);
         }
         notifyDataSetChanged();

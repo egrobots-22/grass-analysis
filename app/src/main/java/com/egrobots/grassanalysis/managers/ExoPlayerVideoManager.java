@@ -1,11 +1,27 @@
 package com.egrobots.grassanalysis.managers;
 
+import android.content.Context;
 import android.util.Log;
+
+import com.egrobots.grassanalysis.R;
+
+import java.io.File;
+import java.util.UUID;
 
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
+import androidx.media3.common.util.Util;
+import androidx.media3.database.DatabaseProvider;
+import androidx.media3.database.ExoDatabaseProvider;
+import androidx.media3.database.StandaloneDatabaseProvider;
+import androidx.media3.datasource.DefaultDataSourceFactory;
+import androidx.media3.datasource.cache.CacheDataSource;
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
+import androidx.media3.datasource.cache.SimpleCache;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.source.ProgressiveMediaSource;
 import androidx.media3.ui.AspectRatioFrameLayout;
 import androidx.media3.ui.PlayerView;
 
@@ -21,11 +37,7 @@ public class ExoPlayerVideoManager {
     private long playbackPosition = 0L;
     private boolean isRepeatEnabled = false;
     private VideoManagerCallback videoManagerCallback;
-
-    public void setExoPlayer(ExoPlayer exoPlayer, String videoUri) {
-        this.exoPlayer = exoPlayer;
-        initializeExoPlayer(videoUri);
-    }
+    private Context context;
 
     public void setExoPlayerCallback(VideoManagerCallback videoManagerCallback) {
         this.videoManagerCallback = videoManagerCallback;
@@ -43,9 +55,28 @@ public class ExoPlayerVideoManager {
         }
     }
 
-    public void initializeExoPlayer(String videoUri) {
-        MediaItem mediaItem = MediaItem.fromUri(videoUri);
-        exoPlayer.setMediaItem(mediaItem);
+    public void initializeExoPlayer(Context context, String videoUri) {
+        exoPlayer = new ExoPlayer.Builder(context).build();
+        LeastRecentlyUsedCacheEvictor evictor = new LeastRecentlyUsedCacheEvictor(100 * 1024 * 1024);
+        SimpleCache simpleCache = new SimpleCache(new File(context.getCacheDir(), UUID.randomUUID().toString())
+                , evictor
+                , new StandaloneDatabaseProvider(context)
+        );
+        CacheDataSource.Factory cacheDataSource = new CacheDataSource.Factory();
+        cacheDataSource.setCache(simpleCache);
+        DefaultDataSourceFactory defaultDataSourceFactory = new DefaultDataSourceFactory(context, Util.getUserAgent(context, context.getString(R.string.app_name)));
+        cacheDataSource.setUpstreamDataSourceFactory(defaultDataSourceFactory);
+        MediaSource mediaSource = null;
+        try {
+            MediaItem mediaItem = MediaItem.fromUri(videoUri);
+            mediaSource = new ProgressiveMediaSource.Factory(cacheDataSource)
+                    .createMediaSource(mediaItem);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        exoPlayer.setMediaSource(mediaSource);
+//        exoPlayer.setMediaItem(mediaItem);
         exoPlayer.setPlayWhenReady(playWhenReady);
         exoPlayer.seekTo(currentItem, playbackPosition);
         exoPlayer.setRepeatMode(Player.REPEAT_MODE_ONE);
@@ -70,6 +101,7 @@ public class ExoPlayerVideoManager {
                         break;
                 }
             }
+
             @Override
             public void onVideoSizeChanged(VideoSize videoSize) {
                 int ratio = videoSize.width / videoSize.height;
