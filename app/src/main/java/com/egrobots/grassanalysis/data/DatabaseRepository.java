@@ -8,6 +8,7 @@ import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -36,7 +37,7 @@ public class DatabaseRepository {
         return firebaseDataSource.getCurrentUserVideos(deviceToken);
     }
 
-    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
+    public Flowable<List<VideoQuestionItem>> getOtherUsersVideos(String deviceToken, Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
         return firebaseDataSource.getOtherUsersVideos(deviceToken, lastTimestamp, isCurrentUser, newVideoUploaded);
     }
 

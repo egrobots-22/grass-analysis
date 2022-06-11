@@ -1,6 +1,5 @@
 package com.egrobots.grassanalysis.data.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class VideoQuestionItem {
@@ -10,6 +9,7 @@ public class VideoQuestionItem {
     private String username;
     private List<String> audioAnswerUri;
     private long timestamp;
+    private boolean justUploaded;
 
     public String getId() {
         return id;
@@ -60,4 +60,11 @@ public class VideoQuestionItem {
     }
 
 
+    public void setIsJustUploaded(boolean isJustUploaded) {
+        this.justUploaded = isJustUploaded;
+    }
+
+    public boolean isJustUploaded() {
+        return justUploaded;
+    }
 }

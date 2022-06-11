@@ -29,7 +29,7 @@ import butterknife.ButterKnife;
 
 public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewHolder> {
 
-    private List<VideoQuestionItem> videoQuestionItems = new ArrayList<>();
+    public List<VideoQuestionItem> videoQuestionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private DatabaseRepository databaseRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();

@@ -24,7 +24,9 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.stream.StreamSupport;
 
 import javax.inject.Inject;
@@ -63,6 +65,7 @@ public class FirebaseDataSource {
         videoQuestionItem.setUsername(username);
         videoQuestionItem.setTimestamp(-System.currentTimeMillis());
         videoQuestionItem.setDeviceToken(deviceToken);
+        videoQuestionItem.setIsJustUploaded(true);
         videosRef.push().setValue(videoQuestionItem).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 emitter.onComplete();
@@ -236,10 +239,13 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Flowable<VideoQuestionItem> getOtherUsersVideos(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
+    private List<VideoQuestionItem> videoItems;
+
+    public Flowable<List<VideoQuestionItem>> getOtherUsersVideos(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
         return Flowable.create(emitter -> {
             count = 0;
             sentItemsCount = 0;
+            videoItems = new ArrayList<>();
             Query videoQuery;
             if (newUploadedVideo) {
                 videoQuery = firebaseDatabase
@@ -264,7 +270,7 @@ public class FirebaseDataSource {
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     int size = Long.valueOf(StreamSupport.stream(snapshot.getChildren().spliterator(), false).count()).intValue();
                     if (size == 0) {
-                        emitter.onNext(new VideoQuestionItem());
+                        emitter.onNext(videoItems);
                         return;
                     }
                     videoQuery.addChildEventListener(new ChildEventListener() {
@@ -274,29 +280,45 @@ public class FirebaseDataSource {
                             videoQuestionItem.setId(questionSnapshot.getKey());
                             if (isCurrentUser) {
                                 if (videoQuestionItem.getDeviceToken().equals(deviceToken)) {
-                                    emitter.onNext(videoQuestionItem);
+                                    videoItems.add(videoQuestionItem);
                                     sentItemsCount++;
                                 }
                             } else {
                                 if (!videoQuestionItem.getDeviceToken().equals(deviceToken)) {
-                                    emitter.onNext(videoQuestionItem);
+                                    videoItems.add(videoQuestionItem);
                                     sentItemsCount++;
                                 }
                             }
                             count++;
 
-                            if (size < LIMIT_ITEM_COUNT && count == size) {
-                                emitter.onComplete();
-                            } else if (count == LIMIT_ITEM_COUNT && sentItemsCount == LIMIT_ITEM_COUNT) {
-                                emitter.onComplete();
-                            } else if (count == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
-                                //retrieve data again
-                                videoQuestionItem.setId(null);
-                                emitter.onNext(videoQuestionItem);
-                            } else if (count == LIMIT_ITEM_COUNT && sentItemsCount < LIMIT_ITEM_COUNT) {
-                                emitter.onComplete();
-                            } else if (count <= sentItemsCount && count == size) {
-                                emitter.onComplete();
+                            //if video is just uploaded, sent it
+                            if (videoQuestionItem.isJustUploaded()) {
+                                VideoQuestionItem item = videoItems.get(videoItems.size() - 1);
+                                item.setId("UPLOADED");
+                                emitter.onNext(videoItems);
+                                questionSnapshot.child("justUploaded").getRef().setValue(false);
+                                videoQuestionItem.setIsJustUploaded(false);
+
+                            } else {
+
+                                if (count == size) {
+                                    if (size < LIMIT_ITEM_COUNT && sentItemsCount == 0) {
+                                        //no more data
+                                        emitter.onNext(videoItems);
+                                    } else if (size < LIMIT_ITEM_COUNT && sentItemsCount > 0) {
+                                        emitter.onNext(videoItems);
+                                    } else if (size == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
+                                        //retrieve data again
+                                        VideoQuestionItem latestItem = new VideoQuestionItem();
+                                        latestItem.setId("LATEST");
+                                        latestItem.setTimestamp(videoQuestionItem.getTimestamp());
+                                        videoItems.add(latestItem);
+                                        emitter.onNext(videoItems);
+                                    } else if (size == LIMIT_ITEM_COUNT && sentItemsCount > 0) {
+                                        //send retrieved items
+                                        emitter.onNext(videoItems);
+                                    }
+                                }
                             }
                         }
 

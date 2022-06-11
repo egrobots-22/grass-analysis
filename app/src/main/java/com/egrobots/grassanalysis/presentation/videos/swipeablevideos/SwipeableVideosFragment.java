@@ -2,8 +2,6 @@ package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,7 +16,6 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
-import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.StateResource;
@@ -27,7 +24,6 @@ import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -37,7 +33,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -75,7 +70,6 @@ public class SwipeableVideosFragment extends DaggerFragment
     private long lastTimestamp;
     private BroadcastReceiver mBroadcastReceiver;
     private VideoQuestionItem latestVideoItem;
-    private boolean newVideoUploaded;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -121,7 +115,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         viewPagerVideos.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
-                progressBar.setVisibility(View.GONE);
+//                progressBar.setVisibility(View.GONE);
                 if (prevPosition != -1) {
                     exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
                     exoPlayerVideoManagerPrev.pausePlayer();
@@ -130,16 +124,16 @@ public class SwipeableVideosFragment extends DaggerFragment
                 exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
                 exoPlayerVideoManagerCur.getPlayerView().hideController();
                 exoPlayerVideoManagerCur.play();
-                //get next block of videos
-                int curAdapterSize = videosAdapter.getCurrentExoPlayerManagerList().size();
-//                if (newVideoUploaded) {
-//                    Toast.makeText(getContext(), "Retrieving the new uploaded video", Toast.LENGTH_SHORT).show();
-//                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, newVideoUploaded);
+                int curAdapterSize = videosAdapter.videoQuestionItems.size();
+//                if (isNewVideoUploaded) {
+//                    isNewVideoUploaded = false;
 //                } else
-                if (prevPosition < position && position == curAdapterSize - 1) {
+                    if (prevPosition < position
+                        && position == curAdapterSize - 1) {
                     Toast.makeText(getContext(), "Retrieving new 2 videos", Toast.LENGTH_SHORT).show();
-                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, newVideoUploaded);
-                    if (newVideoUploaded) newVideoUploaded = false;
+                    //get next block of videos
+                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
+//                    if (newVideoUploaded) newVideoUploaded = false;
                 }
                 prevPosition = position;
             }
@@ -167,11 +161,11 @@ public class SwipeableVideosFragment extends DaggerFragment
             public void onChanged(Boolean isDataExists) {
                 if (!isDataExists) {
                     viewPagerVideos.setVisibility(View.GONE);
-                    progressBar.setVisibility(View.GONE);
+//                    progressBar.setVisibility(View.GONE);
                     emptyView.setVisibility(View.VISIBLE);
                 } else {
                     viewPagerVideos.setVisibility(View.VISIBLE);
-                    progressBar.setVisibility(View.VISIBLE);
+//                    progressBar.setVisibility(View.VISIBLE);
                     emptyView.setVisibility(View.GONE);
                 }
             }
@@ -179,45 +173,41 @@ public class SwipeableVideosFragment extends DaggerFragment
     }
 
     private void observeVideosUris() {
-        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), videoQuestionItem -> {
-            if (emptyView.getVisibility() == View.VISIBLE) {
-                viewPagerVideos.setVisibility(View.VISIBLE);
-                progressBar.setVisibility(View.VISIBLE);
-                emptyView.setVisibility(View.GONE);
-            }
-            if (videoQuestionItem != null && videoQuestionItem.getId() != null) {
-//                if (!newVideoUploaded) {
-                    lastTimestamp = videoQuestionItem.getTimestamp();
-//                }
-                itemsList.add(videoQuestionItem);
-                latestVideoItem = videoQuestionItem;
-            }
-            /*
-            videos retrieved but we don't need to show it as they are videos of same device,
-            so send request again
-             */
-            else if (videoQuestionItem != null && videoQuestionItem.getId() == null) {
-                swipeableVideosViewModel.getNextOtherUsersVideos(videoQuestionItem.getTimestamp() + 1, isCurrentUser, false);
+        swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), videoItems -> {
+            if (videoItems == null && videosAdapter.getItemCount() == 0) {
+                //no data at all
+                showEmptyView(true);
             } else {
-                //add retrieved videos to view pager
-                if (newVideoUploaded) {
-                    videosAdapter.addNewVideo(getContext(), itemsList.get(0));
+                showEmptyView(false);
+                if (videoItems == null) {
+                    Toast.makeText(getContext(), "no new videos", Toast.LENGTH_SHORT).show();
+                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals("LATEST")) {
+                    //retrieve another data ==> videoItems.get(0) is the latest video sent, so we get it's timestamp
+                    swipeableVideosViewModel.getNextOtherUsersVideos(
+                            videoItems.get(0).getTimestamp() + 1,
+                            isCurrentUser,
+                            false);
+                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals("UPLOADED")) {
+                    //uploaded video
+                    videosAdapter.addNewVideo(getContext(), videoItems.get(0));
                 } else {
-                    if (itemsList.size() == 0) {
-                        if (videosAdapter.getItemCount()==0) {
-                            viewPagerVideos.setVisibility(View.GONE);
-                            progressBar.setVisibility(View.GONE);
-                            emptyView.setVisibility(View.VISIBLE);
-                        } else {
-                            Toast.makeText(getContext(), "no new videos", Toast.LENGTH_SHORT).show();
-                        }
-                    } else {
-                        videosAdapter.addAll(getContext(), itemsList);
-                    }
+                    lastTimestamp = videoItems.get(videoItems.size() - 1).getTimestamp();
+                    videosAdapter.addAll(getContext(), videoItems);
                 }
-                itemsList = new ArrayList<>();
             }
         });
+    }
+
+    private void showEmptyView(boolean show) {
+        if (show) {
+            viewPagerVideos.setVisibility(View.GONE);
+            progressBar.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+        } else {
+            viewPagerVideos.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.GONE);
+            emptyView.setVisibility(View.GONE);
+        }
     }
 
     /*
@@ -311,7 +301,7 @@ public class SwipeableVideosFragment extends DaggerFragment
 
     @Override
     public void onPrepare() {
-        progressBar.setVisibility(View.GONE);
+//        progressBar.setVisibility(View.GONE);
     }
 
     @Override

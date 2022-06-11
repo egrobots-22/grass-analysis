@@ -8,6 +8,7 @@ import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.utils.StateResource;
 
 import java.io.File;
+import java.util.List;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -26,7 +27,7 @@ public class SwipeableVideosViewModel extends ViewModel {
     private DatabaseRepository databaseRepository;
     private LocalDataRepository localDataRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
-    private MediatorLiveData<VideoQuestionItem> videoUris = new MediatorLiveData<>();
+    private MediatorLiveData<List<VideoQuestionItem>> videoUris = new MediatorLiveData<>();
     private MediatorLiveData<Boolean> existVideosState = new MediatorLiveData<>();
     private MediatorLiveData<StateResource> uploadAudioState = new MediatorLiveData<>();
 
@@ -49,7 +50,7 @@ public class SwipeableVideosViewModel extends ViewModel {
 
                     @Override
                     public void onNext(VideoQuestionItem questionItem) {
-                        videoUris.setValue(questionItem);
+                        videoUris.setValue(null);
                     }
 
                     @Override
@@ -118,18 +119,27 @@ public class SwipeableVideosViewModel extends ViewModel {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()
-                .subscribe(new Observer<VideoQuestionItem>() {
+                .subscribe(new Observer<List<VideoQuestionItem>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
                     }
 
                     @Override
-                    public void onNext(VideoQuestionItem questionItem) {
-                        if (questionItem.getVideoQuestionUri() == null) {
+                    public void onNext(List<VideoQuestionItem> videoItems) {
+//                        if (videoItems.getVideoQuestionUri() == null) {
+//                            videoUris.setValue(null);
+//                        } else if (videoItems.getId() != null && videoItems.getId().equals("RETRIEVED_ITEMS")) {
+//                            videoUris.setValue(null);
+//                        } else {
+//                            videoUris.setValue(videoItems);
+//                        }
+                        if (videoItems.size() == 0) {
+                            //no more data
                             videoUris.setValue(null);
                         } else {
-                            videoUris.setValue(questionItem);
+                            //set retrieved data
+                            videoUris.setValue(videoItems);
                         }
                     }
 
@@ -167,7 +177,7 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public MediatorLiveData<VideoQuestionItem> observeVideoUris() {
+    public MediatorLiveData<List<VideoQuestionItem>> observeVideoUris() {
         return videoUris;
     }
 
