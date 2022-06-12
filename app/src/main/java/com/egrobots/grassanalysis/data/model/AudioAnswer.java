@@ -1,5 +1,7 @@
 package com.egrobots.grassanalysis.data.model;
 
+import android.net.Uri;
+
 public class AudioAnswer {
 
     private String id;

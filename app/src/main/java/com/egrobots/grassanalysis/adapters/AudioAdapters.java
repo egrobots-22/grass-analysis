@@ -54,7 +54,8 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         executorService.submit(() -> {
             AudioAnswer audioAnswer = audioAnswers.get(position);
             holder.audioNameTextView.setText(audioAnswer.getRecordedUser());
-            holder.audioLengthTextView.setText(holder.setAudioUri(audioAnswer.getAudioUri()));
+            holder.audioLengthTextView.setText(audioAnswer.getAudioLength());
+            holder.setAudioUri(audioAnswer.getAudioUri().toString());
             executorService.shutdown();
         });
     }
@@ -113,10 +114,10 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             ButterKnife.bind(this, itemView);
         }
 
-        private String setAudioUri(String audioUri) {
+        private void setAudioUri(String audioUri) {
             audioPlayer = new AudioPlayer();
             audioPlayer.setAudio(audioUri, this);
-            return audioPlayer.getAudioDuration();
+//            return audioPlayer.getAudioDuration();
         }
 
         @OnClick(R.id.pauseButton)

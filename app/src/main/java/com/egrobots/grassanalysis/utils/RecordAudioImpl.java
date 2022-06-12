@@ -2,13 +2,14 @@ package com.egrobots.grassanalysis.utils;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.net.Uri;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.devlomi.record_view.OnRecordListener;
 import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.AudioRecorder;
 
@@ -94,7 +95,10 @@ public class RecordAudioImpl {
         public void onFinish(long recordTime, boolean limitReached) {
             isRecordStarted = false;
             stopRecording(false);
-            recordAudioCallback.uploadRecordedAudio(recordFile, questionItem);
+            AudioAnswer audioAnswer = new AudioAnswer();
+            audioAnswer.setAudioUri(recordFile.getPath());
+            audioAnswer.setAudioLength(formatMilliSeconds(recordTime));
+            recordAudioCallback.uploadRecordedAudio(audioAnswer, questionItem);
         }
 
         @Override
@@ -113,8 +117,34 @@ public class RecordAudioImpl {
         }
     }
 
+    private String formatMilliSeconds(long milliseconds) {
+        String finalTimerString = "";
+        String secondsString = "";
+
+        // Convert total duration into time
+        int hours = (int) (milliseconds / (1000 * 60 * 60));
+        int minutes = (int) (milliseconds % (1000 * 60 * 60)) / (1000 * 60);
+        int seconds = (int) ((milliseconds % (1000 * 60 * 60)) % (1000 * 60) / 1000);
+
+        // Add hours if there
+        if (hours > 0) {
+            finalTimerString = hours + ":";
+        }
+
+        // Prepending 0 to seconds if it is one digit
+        if (seconds < 10) {
+            secondsString = "0" + seconds;
+        } else {
+            secondsString = "" + seconds;
+        }
+
+        finalTimerString = finalTimerString + minutes + ":" + secondsString;
+        // return timer string
+        return finalTimerString;
+    }
+
     public interface RecordAudioCallback {
         void requestAudioPermission(RecordView view);
-        void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem);
+        void uploadRecordedAudio(AudioAnswer recordFile, VideoQuestionItem questionItem);
     }
 }

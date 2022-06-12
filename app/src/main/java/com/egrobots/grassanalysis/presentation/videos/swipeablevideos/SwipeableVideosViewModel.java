@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.LocalDataRepository;
+import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.utils.StateResource;
 
@@ -154,8 +155,8 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
-        databaseRepository.uploadRecordedAudio(recordFile, questionItem, localDataRepository.getUsername())
+    public void uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem) {
+        databaseRepository.uploadRecordedAudio(audioAnswer, questionItem, localDataRepository.getUsername())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new CompletableObserver() {

@@ -294,13 +294,20 @@ public class FirebaseDataSource {
                             //if video is just uploaded, sent it
                             if (isCurrentUser && videoQuestionItem.isJustUploaded()) {
                                 //set value of just uploaded to false, and save to database
-                                questionSnapshot.child("justUploaded").getRef().setValue(false);
-                                //sent the item to the user
-                                videoQuestionItem.setIsJustUploaded(false);
-                                videoQuestionItem.setId("UPLOADED");
-                                List<VideoQuestionItem> uploadedItemList = new ArrayList<>();
-                                uploadedItemList.add(videoQuestionItem);
-                                emitter.onNext(uploadedItemList);
+                                questionSnapshot.child("justUploaded")
+                                        .getRef()
+                                        .setValue(false)
+                                        .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<Void> task) {
+                                        //sent the item to the user
+                                        videoQuestionItem.setIsJustUploaded(false);
+                                        videoQuestionItem.setId("UPLOADED");
+                                        List<VideoQuestionItem> uploadedItemList = new ArrayList<>();
+                                        uploadedItemList.add(videoQuestionItem);
+                                        emitter.onNext(uploadedItemList);
+                                    }
+                                });
                             } else {
 
                                 if (count == size) {
@@ -355,7 +362,7 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Completable uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem, String username) {
+    public Completable uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem, String username) {
         return Completable.create(new CompletableOnSubscribe() {
             @Override
             public void subscribe(CompletableEmitter emitter) throws Exception {
@@ -363,7 +370,7 @@ public class FirebaseDataSource {
                 StorageMetadata metadata = new StorageMetadata.Builder()
                         .setContentType("audio/mpeg")
                         .build();
-                Uri audioFile = Uri.fromFile(recordFile);
+                Uri audioFile = Uri.fromFile(new File(audioAnswer.getAudioUri()));
                 storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
                     Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
                     audioUrl.addOnCompleteListener(path -> {
@@ -378,6 +385,7 @@ public class FirebaseDataSource {
                             HashMap<String, Object> updates = new HashMap<>();
                             updates.put("audioUri", url);
                             updates.put("recordedUser", username);
+                            updates.put("audioLength", audioAnswer.getAudioLength());
                             audioRef.push().updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override
                                 public void onComplete(@NonNull Task<Void> task) {

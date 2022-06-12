@@ -14,6 +14,7 @@ import android.widget.Toast;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
+import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.Constants;
@@ -21,7 +22,6 @@ import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.StateResource;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -210,8 +210,8 @@ public class SwipeableVideosFragment extends DaggerFragment
     recording audios
      */
     @Override
-    public void uploadRecordedAudio(File recordFile, VideoQuestionItem questionItem) {
-        swipeableVideosViewModel.uploadRecordedAudio(recordFile, questionItem);
+    public void uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem) {
+        swipeableVideosViewModel.uploadRecordedAudio(audioAnswer, questionItem);
     }
 
     private void observeUploadingRecordedAudio() {
