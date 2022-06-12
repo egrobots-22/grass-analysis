@@ -1,6 +1,9 @@
 package com.egrobots.grassanalysis.utils;
 
+import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
+import android.widget.Toast;
 
 import com.devlomi.record_view.OnRecordListener;
 import com.devlomi.record_view.RecordButton;
@@ -11,37 +14,41 @@ import com.egrobots.grassanalysis.managers.AudioRecorder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
 
 public class RecordAudioImpl {
     private static final String FILE_TYPE = ".mp3";
 
+    private Context context;
     private RecordView recordView;
     private RecordButton recordButton;
     private VideoQuestionItem questionItem;
     private File recordFile;
     private AudioRecorder audioRecorder;
     private RecordAudioCallback recordAudioCallback;
+    private boolean isRecordStarted;
 
-    public RecordAudioImpl(RecordView recordView,
+    public RecordAudioImpl(Context context,
+                           RecordView recordView,
                            RecordButton recordButton,
                            VideoQuestionItem questionItem,
                            RecordAudioCallback recordAudioCallback) {
+        this.context = context;
         this.recordView = recordView;
         this.recordButton = recordButton;
         this.questionItem = questionItem;
         this.recordAudioCallback = recordAudioCallback;
     }
 
-    public void setupRecordAudio(File path, String fileName) {
+    public void setupRecordAudio() {
         audioRecorder = new AudioRecorder();
-        recordFile = new File(path, fileName);
         setupRecordButton();
         setupRecordView();
     }
 
     private void setupRecordButton() {
         recordButton.setRecordView(recordView);
-        recordButton.setListenForRecord(false);
+//        recordButton.setListenForRecord(false);
         recordButton.setListenForRecord(true);
     }
 
@@ -64,7 +71,14 @@ public class RecordAudioImpl {
         @Override
         public void onStart() {
             try {
-                audioRecorder.start(recordFile.getPath());
+                if (!isRecordStarted) {
+                    recordFile = new File(context.getExternalFilesDir(null), UUID.randomUUID().toString() + Constants.AUDIO_FILE_TYPE);
+                    Log.i("RecordAudioImpl:74", "recordFile: " + recordFile);
+                    audioRecorder.start(context, recordFile.getPath());
+                    isRecordStarted = true;
+                } else {
+                    stopRecording(true);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -72,21 +86,26 @@ public class RecordAudioImpl {
 
         @Override
         public void onCancel() {
+            isRecordStarted = false;
             stopRecording(true);
         }
 
         @Override
         public void onFinish(long recordTime, boolean limitReached) {
+            isRecordStarted = false;
             stopRecording(false);
             recordAudioCallback.uploadRecordedAudio(recordFile, questionItem);
         }
 
         @Override
         public void onLessThanSecond() {
-
+            isRecordStarted = false;
+            Log.i("RecordAudioImpl:74", "onLessThanSecond: " + recordFile);
+            audioRecorder.destroyMediaRecorder();
         }
 
         private void stopRecording(boolean deleteFile) {
+            isRecordStarted = false;
             audioRecorder.stop();
             if (recordFile != null && deleteFile) {
                 recordFile.delete();

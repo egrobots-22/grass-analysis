@@ -29,6 +29,7 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
 
     private void initView() {
         ViewPager2 viewPager = findViewById(R.id.view_pager);
+        viewPager.setUserInputEnabled(false);
         TabLayout tabLayout = findViewById(R.id.tabs);
         viewPager.setAdapter(new ViewPagerAdapter(this));
         TabLayoutMediator tabLayoutMediator =  new TabLayoutMediator(tabLayout, viewPager,

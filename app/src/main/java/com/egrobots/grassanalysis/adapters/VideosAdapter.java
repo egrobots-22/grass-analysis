@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
@@ -12,15 +13,12 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
-import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import androidx.annotation.NonNull;
-import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -110,8 +108,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         }
 
         private void setRecordAudioView(VideoQuestionItem questionItem) {
-            RecordAudioImpl recordAudioImpl = new RecordAudioImpl(recordView, recordButton, questionItem, recordAudioCallback);
-            recordAudioImpl.setupRecordAudio(itemView.getContext().getExternalFilesDir(null), UUID.randomUUID().toString() + Constants.AUDIO_FILE_TYPE);
+            RecordAudioImpl recordAudioImpl = new RecordAudioImpl(itemView.getContext(), recordView, recordButton, questionItem, recordAudioCallback);
+            recordAudioImpl.setupRecordAudio();
         }
 
         private void setupAudioFilesRecyclerView(VideoQuestionItem questionItem) {

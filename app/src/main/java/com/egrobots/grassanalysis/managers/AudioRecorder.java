@@ -1,12 +1,15 @@
 package com.egrobots.grassanalysis.managers;
 
+import android.content.Context;
 import android.media.MediaRecorder;
+import android.util.Log;
+import android.widget.Toast;
 
 import java.io.IOException;
 
 public class AudioRecorder {
     private MediaRecorder mediaRecorder;
-
+    private Context context;
 
     private void initMediaRecorder() {
         mediaRecorder = new MediaRecorder();
@@ -16,14 +19,20 @@ public class AudioRecorder {
     }
 
 
-    public void start(String filePath) throws IOException {
+    public void start(Context context, String filePath) throws IOException {
         if (mediaRecorder == null) {
             initMediaRecorder();
         }
 
-        mediaRecorder.setOutputFile(filePath);
-        mediaRecorder.prepare();
-        mediaRecorder.start();
+        try {
+            Log.i("AudioRecorder:28", "filePath: " + filePath);
+            mediaRecorder.setOutputFile(filePath);
+            mediaRecorder.prepare();
+            mediaRecorder.start();
+        } catch (IllegalStateException ex) {
+            Toast.makeText(context, "Can't start recording", Toast.LENGTH_SHORT).show();
+            ex.printStackTrace();
+        }
     }
 
     public void stop() {
@@ -36,9 +45,10 @@ public class AudioRecorder {
 
     }
 
-    private void destroyMediaRecorder() {
-        mediaRecorder.release();
-        mediaRecorder = null;
+    public void destroyMediaRecorder() {
+        if (mediaRecorder != null) {
+            mediaRecorder.release();
+            mediaRecorder = null;
+        }
     }
-
 }
