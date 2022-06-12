@@ -125,11 +125,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                 exoPlayerVideoManagerCur.getPlayerView().hideController();
                 exoPlayerVideoManagerCur.play();
                 int curAdapterSize = videosAdapter.videoQuestionItems.size();
-//                if (isNewVideoUploaded) {
-//                    isNewVideoUploaded = false;
-//                } else
-                    if (prevPosition < position
-                        && position == curAdapterSize - 1) {
+                    if (prevPosition < position && position == curAdapterSize - 1) {
                     Toast.makeText(getContext(), "Retrieving new 2 videos", Toast.LENGTH_SHORT).show();
                     //get next block of videos
                     swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
@@ -144,10 +140,10 @@ public class SwipeableVideosFragment extends DaggerFragment
         observeUploadingRecordedAudio();
         if (isCurrentUser) {
 //            swipeableVideosViewModel.isCurrentUserVideosFound();
-            swipeableVideosViewModel.getNextOtherUsersVideos(null, isCurrentUser, false);
+            swipeableVideosViewModel.getNextOtherUsersVideos(null, true, false);
         } else {
 //            swipeableVideosViewModel.isOtherVideosFound();
-            swipeableVideosViewModel.getNextOtherUsersVideos(null, isCurrentUser, false);
+            swipeableVideosViewModel.getNextOtherUsersVideos(null, false, false);
         }
         return view;
     }

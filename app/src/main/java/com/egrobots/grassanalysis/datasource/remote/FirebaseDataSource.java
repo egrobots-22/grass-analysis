@@ -271,7 +271,7 @@ public class FirebaseDataSource {
                     int size = Long.valueOf(StreamSupport.stream(snapshot.getChildren().spliterator(), false).count()).intValue();
                     if (size == 0) {
                         emitter.onNext(videoItems);
-                        return;
+//                        return;
                     }
                     videoQuery.addChildEventListener(new ChildEventListener() {
                         @Override
@@ -292,13 +292,15 @@ public class FirebaseDataSource {
                             count++;
 
                             //if video is just uploaded, sent it
-                            if (videoQuestionItem.isJustUploaded()) {
-                                VideoQuestionItem item = videoItems.get(videoItems.size() - 1);
-                                item.setId("UPLOADED");
-                                emitter.onNext(videoItems);
+                            if (isCurrentUser && videoQuestionItem.isJustUploaded()) {
+                                //set value of just uploaded to false, and save to database
                                 questionSnapshot.child("justUploaded").getRef().setValue(false);
+                                //sent the item to the user
                                 videoQuestionItem.setIsJustUploaded(false);
-
+                                videoQuestionItem.setId("UPLOADED");
+                                List<VideoQuestionItem> uploadedItemList = new ArrayList<>();
+                                uploadedItemList.add(videoQuestionItem);
+                                emitter.onNext(uploadedItemList);
                             } else {
 
                                 if (count == size) {
