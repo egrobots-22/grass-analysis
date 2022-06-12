@@ -27,6 +27,8 @@
     <string name="retry">أعد المحاولة</string>
     <string name="recorded_audio_saved_successfully">تم تسجيل اجابتك بنجاح</string>
     <string name="uploading_audio">جاري تحميل التسجيل</string>
-    <string name="no_more_videos">لا يوجد فيديوهات أخرى</string>\
+    <string name="no_more_videos">لا يوجد فيديوهات أخرى</string>
+    <string name="max_video_duarion_exceed">المدة القصوي للفيديو 30 ثانية</string>
+    <string name="uploaded_done_successfully">تم تحميل الفيديو بنجاح</string>\
 
 </resources>

@@ -124,7 +124,6 @@ public class CameraXRecorder {
                     if (!((VideoRecordEvent.Finalize) videoRecordEvent).hasError()) {
                         Uri videoUri = ((VideoRecordEvent.Finalize) videoRecordEvent).getOutputResults().getOutputUri();
                         cameraXCallback.onStopRecording(videoUri);
-                        Toast.makeText(context, "Video is saved on device", Toast.LENGTH_SHORT).show();
                     } else {
                         if (recording != null) {
                             recording.close();
@@ -139,6 +138,11 @@ public class CameraXRecorder {
 
     public void stopRecording() {
         recordVideo();
+    }
+
+    public void cancelVideoRecording() {
+        recording = null;
+        cameraProvider.unbindAll();
     }
 
     public interface CameraXCallback {

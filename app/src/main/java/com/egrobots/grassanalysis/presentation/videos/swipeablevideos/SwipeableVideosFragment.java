@@ -2,6 +2,8 @@ package com.egrobots.grassanalysis.presentation.videos.swipeablevideos;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,12 +21,14 @@ import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.network.NetworkStateManager;
+import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import javax.inject.Inject;
 
@@ -33,6 +37,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -100,6 +105,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         View view = inflater.inflate(R.layout.fragment_swipeably_videos, container, false);
         ButterKnife.bind(this, view);
 
+        observeUploadingVideo();
         videosAdapter.setRecordAudioCallback(this);
         viewPagerVideos.setAdapter(videosAdapter);
         viewPagerVideos.registerOnPageChangeCallback(new OnVideoChangeCallback());
@@ -218,6 +224,19 @@ public class SwipeableVideosFragment extends DaggerFragment
                     break;
             }
         });
+    }
+
+    private void observeUploadingVideo() {
+        mBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (MyUploadService.UPLOAD_COMPLETED.equals(Objects.requireNonNull(intent.getAction()))) {
+                    Toast.makeText(getContext(), R.string.uploaded_done_successfully, Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(getContext());
+        manager.registerReceiver(mBroadcastReceiver, MyUploadService.getIntentFilter());
     }
 
     @Override
