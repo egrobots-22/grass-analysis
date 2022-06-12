@@ -20,6 +20,13 @@
     <string name="upload_success">Upload finished</string>
     <string name="upload_failure">Upload failed</string>
     <string name="uploading_in_progress">جاري تحميل الفيديو</string>
-    <string name="compressing">Compressing..</string>\
+    <string name="compressing">Compressing..</string>
+    <string name="no_current_questions">لا يوجد أسئلة حالية</string>
+    <string name="no_intenet_connection">لا يوجد اتصال بالانترنت</string>
+    <string name="connect_try_again">عاود الاتصال بشبكة الانترنت وحاول مرة أخرى</string>
+    <string name="retry">أعد المحاولة</string>
+    <string name="recorded_audio_saved_successfully">تم تسجيل اجابتك بنجاح</string>
+    <string name="uploading_audio">جاري تحميل التسجيل</string>
+    <string name="no_more_videos">لا يوجد فيديوهات أخرى</string>\
 
 </resources>

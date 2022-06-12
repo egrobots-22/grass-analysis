@@ -128,24 +128,12 @@ public class SwipeableVideosViewModel extends ViewModel {
 
                     @Override
                     public void onNext(List<VideoQuestionItem> videoItems) {
-//                        if (videoItems.getVideoQuestionUri() == null) {
-//                            videoUris.setValue(null);
-//                        } else if (videoItems.getId() != null && videoItems.getId().equals("RETRIEVED_ITEMS")) {
-//                            videoUris.setValue(null);
-//                        } else {
-//                            videoUris.setValue(videoItems);
-//                        }
-                        if (videoItems.size() == 0) {
-                            //no more data
-                            videoUris.setValue(null);
-                        } else {
-                            //set retrieved data
-                            videoUris.setValue(videoItems);
-                        }
+                        videoUris.setValue(videoItems);
                     }
 
                     @Override
                     public void onError(Throwable e) {
+                        videoUris.setValue(null);
                     }
 
                     @Override

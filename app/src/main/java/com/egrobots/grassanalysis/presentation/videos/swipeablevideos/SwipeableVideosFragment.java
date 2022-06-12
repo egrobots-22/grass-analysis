@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -17,9 +18,9 @@ import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
+import com.egrobots.grassanalysis.network.NetworkStateManager;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
-import com.egrobots.grassanalysis.utils.StateResource;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.BindView;
@@ -56,6 +56,10 @@ public class SwipeableVideosFragment extends DaggerFragment
     View emptyView;
     @BindView(R.id.progress_bar)
     ProgressBar progressBar;
+    @BindView(R.id.no_network_view)
+    View noNetworkView;
+    @BindView(R.id.retry_loading_button)
+    Button retryLoadingButton;
     @Inject
     ViewModelProviderFactory providerFactory;
     @Inject
@@ -64,12 +68,12 @@ public class SwipeableVideosFragment extends DaggerFragment
     private List<VideoQuestionItem> itemsList = new ArrayList<>();
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
-    private ExoPlayerVideoManager exoPlayerVideoManagerPrev;
     private ExoPlayerVideoManager exoPlayerVideoManagerCur;
     private int prevPosition = -1;
     private long lastTimestamp;
     private BroadcastReceiver mBroadcastReceiver;
     private VideoQuestionItem latestVideoItem;
+    private Boolean networkState = null;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -93,49 +97,15 @@ public class SwipeableVideosFragment extends DaggerFragment
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_swipeably_videso, container, false);
+        View view = inflater.inflate(R.layout.fragment_swipeably_videos, container, false);
         ButterKnife.bind(this, view);
 
         videosAdapter.setRecordAudioCallback(this);
         viewPagerVideos.setAdapter(videosAdapter);
-//        mBroadcastReceiver = new BroadcastReceiver() {
-//            @Override
-//            public void onReceive(Context context, Intent intent) {
-//                if (MyUploadService.UPLOAD_COMPLETED.equals(Objects.requireNonNull(intent.getAction()))) {
-//                    newVideoUploaded = true;
-//                    Toast.makeText(getContext(), "New Video is uploaded", Toast.LENGTH_SHORT).show();
-//                    swipeableVideosViewModel.isOtherVideosFound();
-//                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp - 1, isCurrentUser, true);
-//                }
-//            }
-//        };
-//        LocalBroadcastManager manager = LocalBroadcastManager.getInstance(getContext());
-//        manager.registerReceiver(mBroadcastReceiver, MyUploadService.getIntentFilter());
-
-        viewPagerVideos.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-//                progressBar.setVisibility(View.GONE);
-                if (prevPosition != -1) {
-                    exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
-                    exoPlayerVideoManagerPrev.pausePlayer();
-                }
-                exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
-                exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
-                exoPlayerVideoManagerCur.getPlayerView().hideController();
-                exoPlayerVideoManagerCur.play();
-                int curAdapterSize = videosAdapter.videoQuestionItems.size();
-                    if (prevPosition < position && position == curAdapterSize - 1) {
-                    Toast.makeText(getContext(), "Retrieving new 2 videos", Toast.LENGTH_SHORT).show();
-                    //get next block of videos
-                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
-//                    if (newVideoUploaded) newVideoUploaded = false;
-                }
-                prevPosition = position;
-            }
-        });
+        viewPagerVideos.registerOnPageChangeCallback(new OnVideoChangeCallback());
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
 //        observeExistVideosState();
+        observeNetworkConnection();
         observeVideosUris();
         observeUploadingRecordedAudio();
         if (isCurrentUser) {
@@ -148,42 +118,57 @@ public class SwipeableVideosFragment extends DaggerFragment
         return view;
     }
 
+    private void observeNetworkConnection() {
+        NetworkStateManager.getInstance().getNetworkConnectivityStatus()
+                .observe(getViewLifecycleOwner(), curState -> {
+                    if (networkState == null && !curState) {
+                        //show the noNetworkView
+                        noNetworkView.setVisibility(View.VISIBLE);
+                    } else if (networkState != null && !networkState && curState) {
+                        //hide the noNetworkView
+                        noNetworkView.setVisibility(View.GONE);
+                        //retrieve data again
+                        swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
+                    }
+                    networkState = curState;
+                });
+    }
+
     /*
     observing videos
      */
     private void observeExistVideosState() {
-        swipeableVideosViewModel.observeExistVideosState().observe(getViewLifecycleOwner(), new Observer<Boolean>() {
-            @Override
-            public void onChanged(Boolean isDataExists) {
-                if (!isDataExists) {
-                    viewPagerVideos.setVisibility(View.GONE);
+        swipeableVideosViewModel.observeExistVideosState().observe(getViewLifecycleOwner(), isDataExists -> {
+            if (!isDataExists) {
+                viewPagerVideos.setVisibility(View.GONE);
 //                    progressBar.setVisibility(View.GONE);
-                    emptyView.setVisibility(View.VISIBLE);
-                } else {
-                    viewPagerVideos.setVisibility(View.VISIBLE);
+                emptyView.setVisibility(View.VISIBLE);
+            } else {
+                viewPagerVideos.setVisibility(View.VISIBLE);
 //                    progressBar.setVisibility(View.VISIBLE);
-                    emptyView.setVisibility(View.GONE);
-                }
+                emptyView.setVisibility(View.GONE);
             }
         });
     }
 
     private void observeVideosUris() {
         swipeableVideosViewModel.observeVideoUris().observe(getViewLifecycleOwner(), videoItems -> {
-            if (videoItems == null && videosAdapter.getItemCount() == 0) {
+            if (videoItems == null) {
+                Toast.makeText(getContext(), getString(R.string.no_intenet_connection), Toast.LENGTH_SHORT).show();
+            } else if (videoItems.size() == 0 && videosAdapter.getItemCount() == 0) {
                 //no data at all
                 showEmptyView(true);
             } else {
                 showEmptyView(false);
-                if (videoItems == null) {
-                    Toast.makeText(getContext(), "no new videos", Toast.LENGTH_SHORT).show();
-                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals("LATEST")) {
+                if (videoItems.size() == 0) {
+                    Toast.makeText(getContext(), R.string.no_more_videos, Toast.LENGTH_SHORT).show();
+                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals(Constants.LATEST)) {
                     //retrieve another data ==> videoItems.get(0) is the latest video sent, so we get it's timestamp
                     swipeableVideosViewModel.getNextOtherUsersVideos(
                             videoItems.get(0).getTimestamp() + 1,
                             isCurrentUser,
                             false);
-                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals("UPLOADED")) {
+                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals(Constants.UPLOADED)) {
                     //uploaded video
                     videosAdapter.addNewVideo(getContext(), videoItems.get(0));
                 } else {
@@ -211,31 +196,32 @@ public class SwipeableVideosFragment extends DaggerFragment
      */
     @Override
     public void uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem) {
-        swipeableVideosViewModel.uploadRecordedAudio(audioAnswer, questionItem);
+        if (networkState) {
+            swipeableVideosViewModel.uploadRecordedAudio(audioAnswer, questionItem);
+        } else {
+            Toast.makeText(getContext(),
+                    getString(R.string.no_intenet_connection) +", " + getString(R.string.connect_try_again)
+                    , Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void observeUploadingRecordedAudio() {
-        swipeableVideosViewModel.observeUploadAudioState().observe(getViewLifecycleOwner(), new Observer<StateResource>() {
-            @Override
-            public void onChanged(StateResource stateResource) {
-                switch (stateResource.status) {
-                    case SUCCESS:
-                        Toast.makeText(getContext(), "تم تسجيل اجابتك بنجاح", Toast.LENGTH_SHORT).show();
-                    case LOADING:
-                        Toast.makeText(getContext(), "جاري تحميل التسجيل", Toast.LENGTH_SHORT).show();
-                        break;
-                    case ERROR:
-                        Toast.makeText(getContext(), stateResource.message, Toast.LENGTH_SHORT).show();
-                        break;
-                }
+        swipeableVideosViewModel.observeUploadAudioState().observe(getViewLifecycleOwner(), stateResource -> {
+            switch (stateResource.status) {
+                case SUCCESS:
+                    Toast.makeText(getContext(), R.string.recorded_audio_saved_successfully, Toast.LENGTH_SHORT).show();
+                case LOADING:
+                    Toast.makeText(getContext(), R.string.uploading_audio, Toast.LENGTH_SHORT).show();
+                    break;
+                case ERROR:
+                    Toast.makeText(getContext(), stateResource.message, Toast.LENGTH_SHORT).show();
+                    break;
             }
         });
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == AUDIO_REQUEST_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -297,7 +283,6 @@ public class SwipeableVideosFragment extends DaggerFragment
 
     @Override
     public void onPrepare() {
-//        progressBar.setVisibility(View.GONE);
     }
 
     @Override
@@ -308,5 +293,32 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Override
     public void onEnd() {
         viewPagerVideos.setCurrentItem(prevPosition + 1, true);
+    }
+
+    class OnVideoChangeCallback extends ViewPager2.OnPageChangeCallback {
+        @Override
+        public void onPageSelected(int position) {
+            if (prevPosition != -1) {
+                ExoPlayerVideoManager exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
+                exoPlayerVideoManagerPrev.pausePlayer();
+            }
+            exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
+            exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
+            exoPlayerVideoManagerCur.getPlayerView().hideController();
+            exoPlayerVideoManagerCur.play();
+            int curAdapterSize = videosAdapter.videoQuestionItems.size();
+            if (prevPosition < position && position == curAdapterSize - 1) {
+                //get next block of videos
+                if (networkState) {
+//                    Toast.makeText(getContext(), "Retrieving new 2 videos", Toast.LENGTH_SHORT).show();
+                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
+                } else {
+                    Toast.makeText(getContext(),
+                            getString(R.string.no_intenet_connection) + ", "  + getString(R.string.connect_try_again)
+                            , Toast.LENGTH_SHORT).show();
+                }
+            }
+            prevPosition = position;
+        }
     }
 }

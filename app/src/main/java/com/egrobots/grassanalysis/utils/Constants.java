@@ -15,4 +15,6 @@ public class Constants {
     public static final String NO_DATA = "no_data";
     public static final String USER_NAME = "user_name";
     public static final String TIME_STAMP = "time_stamp";
+    public static final String UPLOADED = "UPLOADED";
+    public static final String LATEST = "LATEST";
 }

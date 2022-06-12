@@ -46,9 +46,7 @@ public class RecordScreenActivity extends DaggerAppCompatActivity {
     }
 
     private void observerUploadingProgress() {
-        recordScreenViewModel.observeUploadingProgress().observe(this, progress -> {
-            loadingDialog.setTitle(getString(R.string.uploaded) + (int) progress.doubleValue() + "%");
-        });
+        recordScreenViewModel.observeUploadingProgress().observe(this, progress -> loadingDialog.setTitle(getString(R.string.uploaded) + (int) progress.doubleValue() + "%"));
     }
 
     private void observeStatusChange() {

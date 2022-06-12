@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.egrobots.grassanalysis.di.DaggerAppComponent;
+import com.egrobots.grassanalysis.network.NetworkMonitoringUtil;
 import com.egrobots.grassanalysis.utils.Constants;
 
 import java.util.Random;
@@ -15,9 +16,16 @@ import dagger.android.support.DaggerApplication;
 
 public class BaseActivity extends DaggerApplication {
 
+    private NetworkMonitoringUtil mNetworkMonitoringUtil;
+
     @Override
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
+
+        mNetworkMonitoringUtil = new NetworkMonitoringUtil(base);
+        mNetworkMonitoringUtil.checkNetworkState();
+        mNetworkMonitoringUtil.registerNetworkCallbackEvents();
+
         SharedPreferences sharedPreferences = getSharedPreferences(Constants.PREF_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         String deviceToken = sharedPreferences.getString(Constants.DEVICE_TOKEN, null);

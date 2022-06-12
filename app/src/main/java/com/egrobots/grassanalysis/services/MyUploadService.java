@@ -206,19 +206,16 @@ public class MyUploadService extends MyBaseTaskService {
 //            String exe = "-i " + input + " -vf scale=1280:720 " + output;
 //            String exe = "-i " + input + " -vcodec libx265 -crf 18 " + output;
             String exe = "-i "+ input +" -c:v libx265 -vtag hvc1 -c:a copy " + output;
-            FFmpeg.executeAsync(exe, new ExecuteCallback() {
-                @Override
-                public void apply(long executionId, int returnCode) {
-                    if (returnCode == RETURN_CODE_SUCCESS) {
-                        Uri outputUri = FileProvider.getUriForFile(getApplicationContext(),
-                                getApplicationContext().getPackageName() + ".provider", new File(output));
-                        uploadToFirebaseStorage(outputUri, utils.getFieType(outputUri));
-                        showProgressNotification(getString(R.string.compressing), 10, 1000);
-                    } else if (returnCode == RETURN_CODE_CANCEL) {
-                        Log.i(Config.TAG, "Async command execution cancelled by user.");
-                    } else {
-                        Log.i(Config.TAG, String.format("Async command execution failed with returnCode=%d.", returnCode));
-                    }
+            FFmpeg.executeAsync(exe, (executionId, returnCode) -> {
+                if (returnCode == RETURN_CODE_SUCCESS) {
+                    Uri outputUri = FileProvider.getUriForFile(getApplicationContext(),
+                            getApplicationContext().getPackageName() + ".provider", new File(output));
+                    uploadToFirebaseStorage(outputUri, utils.getFieType(outputUri));
+                    showProgressNotification(getString(R.string.compressing), 10, 1000);
+                } else if (returnCode == RETURN_CODE_CANCEL) {
+                    Log.i(Config.TAG, "Async command execution cancelled by user.");
+                } else {
+                    Log.i(Config.TAG, String.format("Async command execution failed with returnCode=%d.", returnCode));
                 }
             });
         } catch (Exception e) {

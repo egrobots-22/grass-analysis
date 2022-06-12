@@ -25,12 +25,7 @@ public class AudioPlayer {
                 .setLegacyStreamType(AudioManager.STREAM_MUSIC)
                 .build();
         mediaPlayer.setAudioAttributes(audioAttributes);
-        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                audioPlayCallback.onComplete();
-            }
-        });
+        mediaPlayer.setOnCompletionListener(mp -> audioPlayCallback.onComplete());
         try {
             mediaPlayer.setDataSource(audioUri);
             mediaPlayer.prepare();
@@ -52,7 +47,7 @@ public class AudioPlayer {
     public String getAudioDuration() {
         try {
             MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
-            mediaMetadataRetriever.setDataSource(audioUri, new HashMap<String, String>());
+            mediaMetadataRetriever.setDataSource(audioUri, new HashMap<>());
             String durationStr = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
             mediaMetadataRetriever.release();
             return formatMilliSeconds(Long.parseLong(durationStr));

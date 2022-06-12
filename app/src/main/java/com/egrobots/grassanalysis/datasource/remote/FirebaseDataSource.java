@@ -79,68 +79,43 @@ public class FirebaseDataSource {
     }
 
     public Flowable<Double> uploadVideo(Uri videoUri, String fileType, String deviceToken, String username) {
-        return Flowable.create(new FlowableOnSubscribe<Double>() {
-            @Override
-            public void subscribe(FlowableEmitter<Double> emitter) throws Exception {
-                final StorageReference reference = storageReference.child(Constants.STORAGE_REF + System.currentTimeMillis() + "." + fileType);
-                UploadTask uploadTask = reference.putFile(videoUri);
-                uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-                    @Override
-                    public void onProgress(@NonNull UploadTask.TaskSnapshot snapshot) {
-                        double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
-                        emitter.onNext(progress);
-                    }
-                }).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-                    @Override
-                    public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                        if (!task.isSuccessful()) {
-                            emitter.onError(task.getException());
-                        }
+        return Flowable.create(emitter -> {
+            final StorageReference reference = storageReference.child(Constants.STORAGE_REF + System.currentTimeMillis() + "." + fileType);
+            UploadTask uploadTask = reference.putFile(videoUri);
+            uploadTask.addOnProgressListener(snapshot -> {
+                double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
+                emitter.onNext(progress);
+            }).continueWithTask(task -> {
+                if (!task.isSuccessful()) {
+                    emitter.onError(task.getException());
+                }
 
-                        // Continue with the task to get the download URL
-                        reference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Uri> task) {
-                                saveVideoInfo(emitter, task.getResult().toString(), deviceToken, username);
-                            }
-                        });
-                        return reference.getDownloadUrl();
-                    }
-                });
-            }
+                // Continue with the task to get the download URL
+                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, username));
+                return reference.getDownloadUrl();
+            });
         }, BackpressureStrategy.BUFFER);
     }
 
     public Flowable<UploadTask.TaskSnapshot> uploadVideoAsService(Uri videoUri, String fileType, String deviceToken, String username) {
-        return Flowable.create(new FlowableOnSubscribe<UploadTask.TaskSnapshot>() {
-            @Override
-            public void subscribe(FlowableEmitter<UploadTask.TaskSnapshot> emitter) throws Exception {
-                final StorageReference reference = storageReference.child(Constants.STORAGE_REF + System.currentTimeMillis() + "." + fileType);
-                UploadTask uploadTask = reference.putFile(videoUri);
-                uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
-                    @Override
-                    public void onProgress(@NonNull UploadTask.TaskSnapshot snapshot) {
-                        double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
-                        emitter.onNext(snapshot);
-                    }
-                }).continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
-                    @Override
-                    public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                        if (!task.isSuccessful()) {
-                            emitter.onError(task.getException());
-                        }
-
-                        // Continue with the task to get the download URL
-                        reference.getDownloadUrl().addOnCompleteListener(new OnCompleteListener<Uri>() {
-                            @Override
-                            public void onComplete(@NonNull Task<Uri> task) {
-                                saveVideoInfo(emitter, task.getResult().toString(), deviceToken, username);
-                            }
-                        });
-                        return reference.getDownloadUrl();
-                    }
-                });
-            }
+        return Flowable.create(emitter -> {
+            final StorageReference reference = storageReference.child(Constants.STORAGE_REF + System.currentTimeMillis() + "." + fileType);
+            UploadTask uploadTask = reference.putFile(videoUri);
+            uploadTask.addOnProgressListener(snapshot -> {
+                double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
+                emitter.onNext(snapshot);
+            }).continueWithTask(task -> {
+                if (!task.isSuccessful()) {
+                    emitter.onError(task.getException());
+                    Log.e(TAG, "then: " + task.getException() );
+                }
+                // Continue with the task to get the download URL
+                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, username));
+                return reference.getDownloadUrl();
+            }).addOnFailureListener(e -> {
+                Log.i(TAG, "onFailure: " + e);
+                emitter.onError(e);
+            });
         }, BackpressureStrategy.BUFFER);
     }
 
@@ -297,17 +272,14 @@ public class FirebaseDataSource {
                                 questionSnapshot.child("justUploaded")
                                         .getRef()
                                         .setValue(false)
-                                        .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                    @Override
-                                    public void onComplete(@NonNull Task<Void> task) {
-                                        //sent the item to the user
-                                        videoQuestionItem.setIsJustUploaded(false);
-                                        videoQuestionItem.setId("UPLOADED");
-                                        List<VideoQuestionItem> uploadedItemList = new ArrayList<>();
-                                        uploadedItemList.add(videoQuestionItem);
-                                        emitter.onNext(uploadedItemList);
-                                    }
-                                });
+                                        .addOnCompleteListener(task -> {
+                                            //sent the item to the user
+                                            videoQuestionItem.setIsJustUploaded(false);
+                                            videoQuestionItem.setId(Constants.UPLOADED);
+                                            List<VideoQuestionItem> uploadedItemList = new ArrayList<>();
+                                            uploadedItemList.add(videoQuestionItem);
+                                            emitter.onNext(uploadedItemList);
+                                        });
                             } else {
 
                                 if (count == size) {
@@ -319,7 +291,7 @@ public class FirebaseDataSource {
                                     } else if (size == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
                                         //retrieve data again
                                         VideoQuestionItem latestItem = new VideoQuestionItem();
-                                        latestItem.setId("LATEST");
+                                        latestItem.setId(Constants.LATEST);
                                         latestItem.setTimestamp(videoQuestionItem.getTimestamp());
                                         videoItems.add(latestItem);
                                         emitter.onNext(videoItems);
@@ -363,95 +335,83 @@ public class FirebaseDataSource {
     }
 
     public Completable uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem, String username) {
-        return Completable.create(new CompletableOnSubscribe() {
-            @Override
-            public void subscribe(CompletableEmitter emitter) throws Exception {
-                StorageReference storageReference = FirebaseStorage.getInstance().getReference(Constants.AUDIO_PATH + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
-                StorageMetadata metadata = new StorageMetadata.Builder()
-                        .setContentType("audio/mpeg")
-                        .build();
-                Uri audioFile = Uri.fromFile(new File(audioAnswer.getAudioUri()));
-                storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
-                    Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
-                    audioUrl.addOnCompleteListener(path -> {
-                        if (path.isSuccessful()) {
-                            String url = path.getResult().toString();
-                            DatabaseReference audioRef = FirebaseDatabase.getInstance()
-                                    .getReference(Constants.QUESTIONS_NODE)
-                                    .child(questionItem.getId())
-                                    .child(Constants.ANSWERS_NODE);
+        return Completable.create(emitter -> {
+            StorageReference storageReference = FirebaseStorage.getInstance().getReference(Constants.AUDIO_PATH + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
+            StorageMetadata metadata = new StorageMetadata.Builder()
+                    .setContentType("audio/mpeg")
+                    .build();
+            Uri audioFile = Uri.fromFile(new File(audioAnswer.getAudioUri()));
+            storageReference.putFile(audioFile, metadata).addOnSuccessListener(success -> {
+                Task<Uri> audioUrl = success.getStorage().getDownloadUrl();
+                audioUrl.addOnCompleteListener(path -> {
+                    if (path.isSuccessful()) {
+                        String url = path.getResult().toString();
+                        DatabaseReference audioRef = FirebaseDatabase.getInstance()
+                                .getReference(Constants.QUESTIONS_NODE)
+                                .child(questionItem.getId())
+                                .child(Constants.ANSWERS_NODE);
 
 //                            String pushId = audioRef.push().getKey();
-                            HashMap<String, Object> updates = new HashMap<>();
-                            updates.put("audioUri", url);
-                            updates.put("recordedUser", username);
-                            updates.put("audioLength", audioAnswer.getAudioLength());
-                            audioRef.push().updateChildren(updates).addOnCompleteListener(new OnCompleteListener<Void>() {
-                                @Override
-                                public void onComplete(@NonNull Task<Void> task) {
-                                    if (task.isSuccessful()) {
-                                        emitter.onComplete();
-                                    } else {
-                                        emitter.onError(new Throwable("خطأ اثناء تحميل التسجيل"));
+                        HashMap<String, Object> updates = new HashMap<>();
+                        updates.put("audioUri", url);
+                        updates.put("recordedUser", username);
+                        updates.put("audioLength", audioAnswer.getAudioLength());
+                        audioRef.push().updateChildren(updates).addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                emitter.onComplete();
+                            } else {
+                                emitter.onError(new Throwable("خطأ اثناء تحميل التسجيل"));
 
-                                    }
-                                }
-                            });
-                        }
-                    });
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        emitter.onError(new Throwable("خطأ اثناء تحميل التسجيل"));
-                        Log.e("Error", "onFailure: " + e.getMessage());
+                            }
+                        });
                     }
                 });
+            }).addOnFailureListener(e -> {
+                emitter.onError(new Throwable("خطأ اثناء تحميل التسجيل"));
+                Log.e("Error", "onFailure: " + e.getMessage());
+            });
 
-            }
         });
     }
 
     public Flowable<AudioAnswer> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
-        return Flowable.create(new FlowableOnSubscribe<AudioAnswer>() {
-            @Override
-            public void subscribe(FlowableEmitter<AudioAnswer> emitter) throws Exception {
-                DatabaseReference databaseReference = FirebaseDatabase.getInstance()
-                        .getReference(Constants.QUESTIONS_NODE)
-                        .child(questionItem.getId())
-                        .child(Constants.ANSWERS_NODE);
-                databaseReference.addChildEventListener(new ChildEventListener() {
-                    @Override
-                    public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
-                        if (snapshot.exists()) {
-                            AudioAnswer audioAnswer = snapshot.getValue(AudioAnswer.class);
-                            audioAnswer.setId(snapshot.getKey());
+        return Flowable.create(emitter -> {
+            DatabaseReference databaseReference = FirebaseDatabase.getInstance()
+                    .getReference(Constants.QUESTIONS_NODE)
+                    .child(questionItem.getId())
+                    .child(Constants.ANSWERS_NODE);
+            databaseReference.addChildEventListener(new ChildEventListener() {
+                @Override
+                public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                    if (snapshot.exists()) {
+                        AudioAnswer audioAnswer = snapshot.getValue(AudioAnswer.class);
+                        audioAnswer.setId(snapshot.getKey());
 //                            audioAnswer.setAudioUri((String) snapshot.getValue());
 //                            String audioAnswerUri = (String) snapshot.getValue();
-                            emitter.onNext(audioAnswer);
-                        }
+                        emitter.onNext(audioAnswer);
                     }
+                }
 
-                    @Override
-                    public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                @Override
+                public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    }
+                }
 
-                    @Override
-                    public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                @Override
+                public void onChildRemoved(@NonNull DataSnapshot snapshot) {
 
-                    }
+                }
 
-                    @Override
-                    public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                @Override
+                public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                    }
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                    }
-                });
-            }
+                }
+            });
         }, BackpressureStrategy.BUFFER);
     }
 
@@ -459,43 +419,40 @@ public class FirebaseDataSource {
      ** old
      */
     public Flowable<VideoQuestionItem> getOtherUsersVideosOld(String deviceToken) {
-        return Flowable.create(new FlowableOnSubscribe<VideoQuestionItem>() {
-            @Override
-            public void subscribe(FlowableEmitter<VideoQuestionItem> emitter) throws Exception {
+        return Flowable.create(emitter -> {
 
-                final DatabaseReference videosRef = firebaseDatabase
-                        .getReference(Constants.QUESTIONS_NODE);
-                //check firstly if there is data exists
-                videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override
-                    public void onDataChange(@NonNull DataSnapshot snapshot) {
-                        if (snapshot.hasChildren()) {
-                            boolean otherDataExists = false;
-                            for (DataSnapshot deviceSnapshot : snapshot.getChildren()) {
-                                if (!deviceSnapshot.getKey().equals(deviceToken)) {
-                                    otherDataExists = true;
+            final DatabaseReference videosRef = firebaseDatabase
+                    .getReference(Constants.QUESTIONS_NODE);
+            //check firstly if there is data exists
+            videosRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.hasChildren()) {
+                        boolean otherDataExists = false;
+                        for (DataSnapshot deviceSnapshot : snapshot.getChildren()) {
+                            if (!deviceSnapshot.getKey().equals(deviceToken)) {
+                                otherDataExists = true;
 //                                    childCount++;
 //                                    break;
-                                }
                             }
-                            if (!otherDataExists) {
-                                //send item object with empty data to trigger no data screen
-                                emitter.onNext(new VideoQuestionItem());
-                            } else {
-//                                videosRef.addChildEventListener(new RetrieveOtherVideosChildEventListener(deviceToken, null, emitter));
-                            }
-                        } else {
-                            emitter.onNext(new VideoQuestionItem());
                         }
+                        if (!otherDataExists) {
+                            //send item object with empty data to trigger no data screen
+                            emitter.onNext(new VideoQuestionItem());
+                        } else {
+//                                videosRef.addChildEventListener(new RetrieveOtherVideosChildEventListener(deviceToken, null, emitter));
+                        }
+                    } else {
+                        emitter.onNext(new VideoQuestionItem());
                     }
+                }
 
-                    @Override
-                    public void onCancelled(@NonNull DatabaseError error) {
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) {
 
-                    }
-                });
+                }
+            });
 
-            }
         }, BackpressureStrategy.BUFFER);
     }
 
