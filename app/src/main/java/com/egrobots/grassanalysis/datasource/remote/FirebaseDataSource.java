@@ -51,7 +51,7 @@ public class FirebaseDataSource {
         this.firebaseDatabase = firebaseDatabase;
     }
 
-    private void saveVideoInfo(FlowableEmitter emitter, String videoUri, String deviceToken, String username) {
+    private void saveVideoInfo(FlowableEmitter emitter, String videoUri, String deviceToken, String fileType, String username) {
         DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
         QuestionItem questionItem = new QuestionItem();
         questionItem.setVideoQuestionUri(videoUri);
@@ -59,6 +59,7 @@ public class FirebaseDataSource {
         questionItem.setTimestamp(-System.currentTimeMillis());
         questionItem.setDeviceToken(deviceToken);
         questionItem.setIsJustUploaded(true);
+        questionItem.setType(fileType);
         videosRef.push().setValue(questionItem).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 emitter.onComplete();
@@ -84,7 +85,7 @@ public class FirebaseDataSource {
                 }
 
                 // Continue with the task to get the download URL
-                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, username));
+                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, username, username));
                 return reference.getDownloadUrl();
             });
         }, BackpressureStrategy.BUFFER);
@@ -103,7 +104,7 @@ public class FirebaseDataSource {
                     Log.e(TAG, "then: " + task.getException() );
                 }
                 // Continue with the task to get the download URL
-                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, username));
+                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, fileType, username));
                 return reference.getDownloadUrl();
             }).addOnFailureListener(e -> {
                 Log.i(TAG, "onFailure: " + e);

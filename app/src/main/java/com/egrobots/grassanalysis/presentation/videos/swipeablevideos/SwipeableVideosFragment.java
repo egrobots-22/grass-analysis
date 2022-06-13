@@ -319,12 +319,16 @@ public class SwipeableVideosFragment extends DaggerFragment
         public void onPageSelected(int position) {
             if (prevPosition != -1) {
                 ExoPlayerVideoManager exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
-                exoPlayerVideoManagerPrev.pausePlayer();
+                if (exoPlayerVideoManagerPrev != null) {
+                    exoPlayerVideoManagerPrev.pausePlayer();
+                }
             }
             exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
-            exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
-            exoPlayerVideoManagerCur.getPlayerView().hideController();
-            exoPlayerVideoManagerCur.play();
+            if (exoPlayerVideoManagerCur != null) {
+                exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
+                exoPlayerVideoManagerCur.getPlayerView().hideController();
+                exoPlayerVideoManagerCur.play();
+            }
             int curAdapterSize = videosAdapter.questionItems.size();
             if (prevPosition < position && position == curAdapterSize - 1) {
                 //get next block of videos

@@ -9,6 +9,7 @@ public class QuestionItem {
     private String username;
     private List<String> audioAnswerUri;
     private long timestamp;
+    private String type;
     private boolean justUploaded;
 
     public String getId() {
@@ -66,6 +67,14 @@ public class QuestionItem {
 
     public boolean isJustUploaded() {
         return justUploaded;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public enum RecordType {

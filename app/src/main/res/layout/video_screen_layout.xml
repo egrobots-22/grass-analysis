@@ -18,7 +18,15 @@
     <androidx.media3.ui.PlayerView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:visibility="gone"/>
 
     <ProgressBar
         android:id="@+id/progressBar"
