@@ -3,11 +3,10 @@ package com.egrobots.grassanalysis.data;
 import android.net.Uri;
 
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
-import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 import com.google.firebase.storage.UploadTask;
 
-import java.io.File;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -33,19 +32,19 @@ public class DatabaseRepository {
         return firebaseDataSource.uploadVideoAsService(videoUri, fileType, deviceToken, username);
     }
 
-    public Flowable<VideoQuestionItem> getCurrentUserVideos(String deviceToken) {
+    public Flowable<QuestionItem> getCurrentUserVideos(String deviceToken) {
         return firebaseDataSource.getCurrentUserVideos(deviceToken);
     }
 
-    public Flowable<List<VideoQuestionItem>> getOtherUsersVideos(String deviceToken, Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
+    public Flowable<List<QuestionItem>> getOtherUsersVideos(String deviceToken, Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
         return firebaseDataSource.getOtherUsersVideos(deviceToken, lastTimestamp, isCurrentUser, newVideoUploaded);
     }
 
-    public Completable uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem, String username) {
+    public Completable uploadRecordedAudio(AudioAnswer audioAnswer, QuestionItem questionItem, String username) {
         return firebaseDataSource.uploadRecordedAudio(audioAnswer, questionItem, username);
     }
 
-    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
+    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(QuestionItem questionItem) {
         return firebaseDataSource.getRecordedAudiosForQuestion(questionItem);
     }
 

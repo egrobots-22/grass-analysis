@@ -4,11 +4,8 @@ import android.net.Uri;
 import android.util.Log;
 
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
-import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.utils.Constants;
-import com.google.android.gms.tasks.Continuation;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -18,7 +15,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -35,11 +31,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
-import io.reactivex.CompletableEmitter;
-import io.reactivex.CompletableOnSubscribe;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
-import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Single;
 
 public class FirebaseDataSource {
@@ -60,13 +53,13 @@ public class FirebaseDataSource {
 
     private void saveVideoInfo(FlowableEmitter emitter, String videoUri, String deviceToken, String username) {
         DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
-        VideoQuestionItem videoQuestionItem = new VideoQuestionItem();
-        videoQuestionItem.setVideoQuestionUri(videoUri);
-        videoQuestionItem.setUsername(username);
-        videoQuestionItem.setTimestamp(-System.currentTimeMillis());
-        videoQuestionItem.setDeviceToken(deviceToken);
-        videoQuestionItem.setIsJustUploaded(true);
-        videosRef.push().setValue(videoQuestionItem).addOnCompleteListener(task -> {
+        QuestionItem questionItem = new QuestionItem();
+        questionItem.setVideoQuestionUri(videoUri);
+        questionItem.setUsername(username);
+        questionItem.setTimestamp(-System.currentTimeMillis());
+        questionItem.setDeviceToken(deviceToken);
+        questionItem.setIsJustUploaded(true);
+        videosRef.push().setValue(questionItem).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 emitter.onComplete();
             } else {
@@ -139,7 +132,7 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<VideoQuestionItem> getCurrentUserVideos(String deviceToken) {
+    public Flowable<QuestionItem> getCurrentUserVideos(String deviceToken) {
         return Flowable.create(emitter -> {
             final Query videosQuery = firebaseDatabase
                     .getReference(Constants.QUESTIONS_NODE)
@@ -150,10 +143,10 @@ public class FirebaseDataSource {
             videosQuery.addChildEventListener(new ChildEventListener() {
                 @Override
                 public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
-                    VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
-                    videoQuestionItem.setId(questionSnapshot.getKey());
-                    videoQuestionItem.setDeviceToken(deviceToken);
-                    emitter.onNext(videoQuestionItem);
+                    QuestionItem questionItem = questionSnapshot.getValue(QuestionItem.class);
+                    questionItem.setId(questionSnapshot.getKey());
+                    questionItem.setDeviceToken(deviceToken);
+                    emitter.onNext(questionItem);
                 }
 
                 @Override
@@ -208,15 +201,15 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<VideoQuestionItem> getVideos3(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
+    public Flowable<QuestionItem> getVideos3(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
         return Flowable.create(emitter -> {
 
         }, BackpressureStrategy.BUFFER);
     }
 
-    private List<VideoQuestionItem> videoItems;
+    private List<QuestionItem> videoItems;
 
-    public Flowable<List<VideoQuestionItem>> getOtherUsersVideos(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
+    public Flowable<List<QuestionItem>> getOtherUsersVideos(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
         return Flowable.create(emitter -> {
             count = 0;
             sentItemsCount = 0;
@@ -251,33 +244,33 @@ public class FirebaseDataSource {
                     videoQuery.addChildEventListener(new ChildEventListener() {
                         @Override
                         public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
-                            VideoQuestionItem videoQuestionItem = questionSnapshot.getValue(VideoQuestionItem.class);
-                            videoQuestionItem.setId(questionSnapshot.getKey());
+                            QuestionItem questionItem = questionSnapshot.getValue(QuestionItem.class);
+                            questionItem.setId(questionSnapshot.getKey());
                             if (isCurrentUser) {
-                                if (videoQuestionItem.getDeviceToken().equals(deviceToken)) {
-                                    videoItems.add(videoQuestionItem);
+                                if (questionItem.getDeviceToken().equals(deviceToken)) {
+                                    videoItems.add(questionItem);
                                     sentItemsCount++;
                                 }
                             } else {
-                                if (!videoQuestionItem.getDeviceToken().equals(deviceToken)) {
-                                    videoItems.add(videoQuestionItem);
+                                if (!questionItem.getDeviceToken().equals(deviceToken)) {
+                                    videoItems.add(questionItem);
                                     sentItemsCount++;
                                 }
                             }
                             count++;
 
                             //if video is just uploaded, sent it
-                            if (isCurrentUser && videoQuestionItem.isJustUploaded()) {
+                            if (isCurrentUser && questionItem.isJustUploaded()) {
                                 //set value of just uploaded to false, and save to database
                                 questionSnapshot.child("justUploaded")
                                         .getRef()
                                         .setValue(false)
                                         .addOnCompleteListener(task -> {
                                             //sent the item to the user
-                                            videoQuestionItem.setIsJustUploaded(false);
-                                            videoQuestionItem.setId(Constants.UPLOADED);
-                                            List<VideoQuestionItem> uploadedItemList = new ArrayList<>();
-                                            uploadedItemList.add(videoQuestionItem);
+                                            questionItem.setIsJustUploaded(false);
+                                            questionItem.setId(Constants.UPLOADED);
+                                            List<QuestionItem> uploadedItemList = new ArrayList<>();
+                                            uploadedItemList.add(questionItem);
                                             emitter.onNext(uploadedItemList);
                                         });
                             } else {
@@ -290,9 +283,9 @@ public class FirebaseDataSource {
                                         emitter.onNext(videoItems);
                                     } else if (size == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
                                         //retrieve data again
-                                        VideoQuestionItem latestItem = new VideoQuestionItem();
+                                        QuestionItem latestItem = new QuestionItem();
                                         latestItem.setId(Constants.LATEST);
-                                        latestItem.setTimestamp(videoQuestionItem.getTimestamp());
+                                        latestItem.setTimestamp(questionItem.getTimestamp());
                                         videoItems.add(latestItem);
                                         emitter.onNext(videoItems);
                                     } else if (size == LIMIT_ITEM_COUNT && sentItemsCount > 0) {
@@ -334,7 +327,7 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Completable uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem, String username) {
+    public Completable uploadRecordedAudio(AudioAnswer audioAnswer, QuestionItem questionItem, String username) {
         return Completable.create(emitter -> {
             StorageReference storageReference = FirebaseStorage.getInstance().getReference(Constants.AUDIO_PATH + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
             StorageMetadata metadata = new StorageMetadata.Builder()
@@ -374,7 +367,7 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(VideoQuestionItem questionItem) {
+    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(QuestionItem questionItem) {
         return Flowable.create(emitter -> {
             DatabaseReference databaseReference = FirebaseDatabase.getInstance()
                     .getReference(Constants.QUESTIONS_NODE)
@@ -418,7 +411,7 @@ public class FirebaseDataSource {
     /*
      ** old
      */
-    public Flowable<VideoQuestionItem> getOtherUsersVideosOld(String deviceToken) {
+    public Flowable<QuestionItem> getOtherUsersVideosOld(String deviceToken) {
         return Flowable.create(emitter -> {
 
             final DatabaseReference videosRef = firebaseDatabase
@@ -438,12 +431,12 @@ public class FirebaseDataSource {
                         }
                         if (!otherDataExists) {
                             //send item object with empty data to trigger no data screen
-                            emitter.onNext(new VideoQuestionItem());
+                            emitter.onNext(new QuestionItem());
                         } else {
 //                                videosRef.addChildEventListener(new RetrieveOtherVideosChildEventListener(deviceToken, null, emitter));
                         }
                     } else {
-                        emitter.onNext(new VideoQuestionItem());
+                        emitter.onNext(new QuestionItem());
                     }
                 }
 

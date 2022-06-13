@@ -7,16 +7,18 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.MediaStore;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.CameraXRecorder;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.services.MyUploadService;
+import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.LoadingDialog;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
@@ -55,15 +57,18 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     @BindView(R.id.recorded_time_tv)
     TextView recordedSecondsTV;
     @BindView(R.id.review_video_view)
-    View reviewVideoView;
+    View reviewView;
     @BindView(R.id.videoView)
     PlayerView playerView;
+    @BindView(R.id.imageView)
+    ImageView imageView;
     private CameraXRecorder cameraXRecorder;
     private int recordedSeconds;
     private Handler handler = new Handler();
     private Runnable updateEverySecRunnable;
-    private Uri videoUri;
+    private Uri fileUri;
     private ExoPlayerVideoManager exoPlayerVideoManager;
+    private QuestionItem.RecordType recordType;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,6 +76,10 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         setContentView(R.layout.activity_record_screen2);
         ButterKnife.bind(this);
 
+        //get type of camera
+        if (getIntent() != null) {
+            recordType = (QuestionItem.RecordType) getIntent().getExtras().get(Constants.RECORD_TYPE);
+        }
         initializeCameraX();
     }
 
@@ -87,7 +96,11 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @OnClick(R.id.video_capture_button)
     public void onVideoRecordClicked() {
-        cameraXRecorder.recordVideo();
+        if (recordType == QuestionItem.RecordType.VIDEO) {
+            cameraXRecorder.recordVideo();
+        } else {
+            cameraXRecorder.captureImage();
+        }
     }
 
     @Override
@@ -119,13 +132,13 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @Override
     public void onStopRecording(Uri videoUri) {
-        this.videoUri = videoUri;
+        fileUri = videoUri;
         recordedSeconds = 0;
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
         handler.removeCallbacks(updateEverySecRunnable);
         //show review view to accept or cancel video
-        reviewVideoView.setVisibility(View.VISIBLE);
+        reviewView.setVisibility(View.VISIBLE);
         //hide record button
         videoCaptureButton.setVisibility(View.GONE);
         //show recorded video
@@ -142,34 +155,53 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @OnClick(R.id.done_button)
     public void onDoneClicked() {
-        if (videoUri != null) {
-            String fileType = utils.getFieType(videoUri);
-            startUploadingVideoService(videoUri, fileType);
+        if (fileUri != null) {
+            String fileType = utils.getFieType(fileUri);
+            startUploadingVideoService(fileUri, fileType);
             //release exoplayer
-            exoPlayerVideoManager.releasePlayer();
+            if (exoPlayerVideoManager != null) {
+                exoPlayerVideoManager.releasePlayer();
+            }
         }
     }
 
     @OnClick(R.id.cancel_button)
     public void onCancelButton() {
+        if (exoPlayerVideoManager != null) {
+            //release exoplayer
+            exoPlayerVideoManager.releasePlayer();
+        }
         recordedSeconds = 0;
         recordedSecondsTV.setText("");
-        //release exoplayer
-        exoPlayerVideoManager.releasePlayer();
         //show camerax view
         previewView.setVisibility(View.VISIBLE);
         playerView.setVisibility(View.GONE);
+        imageView.setVisibility(View.GONE);
         //hide review view
-        reviewVideoView.setVisibility(View.GONE);
+        reviewView.setVisibility(View.GONE);
         //show record button
         videoCaptureButton.setVisibility(View.VISIBLE);
         initializeCameraX();
+    }
+
+    @Override
+    public void onCaptureImage(Uri imageUri) {
+        fileUri = imageUri;
+        //show review view to accept or cancel video
+        reviewView.setVisibility(View.VISIBLE);
+        //hide record button
+        videoCaptureButton.setVisibility(View.GONE);
+        //show image view
+        imageView.setVisibility(View.VISIBLE);
+        imageView.setImageURI(imageUri);
+        previewView.setVisibility(View.GONE);
     }
 
     private void startUploadingVideoService(Uri videoUri, String fileType) {
         Intent uploadServiceIntent = new Intent(this, MyUploadService.class);
         uploadServiceIntent.putExtra(MyUploadService.EXTRA_FILE_URI, videoUri);
         uploadServiceIntent.putExtra(MyUploadService.FILE_TYPE, fileType);
+        uploadServiceIntent.putExtra(MyUploadService.RECORD_TYPE, recordType);
         uploadServiceIntent.setAction(MyUploadService.ACTION_UPLOAD);
         startService(uploadServiceIntent);
         Toast.makeText(this, R.string.uploading_in_progress, Toast.LENGTH_SHORT).show();

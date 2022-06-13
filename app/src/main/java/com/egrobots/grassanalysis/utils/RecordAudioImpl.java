@@ -2,7 +2,6 @@ package com.egrobots.grassanalysis.utils;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.net.Uri;
 import android.util.Log;
 
 import com.devlomi.record_view.OnRecordListener;
@@ -10,7 +9,7 @@ import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
-import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.AudioRecorder;
 
 import java.io.File;
@@ -23,7 +22,7 @@ public class RecordAudioImpl {
     private Context context;
     private RecordView recordView;
     private RecordButton recordButton;
-    private VideoQuestionItem questionItem;
+    private QuestionItem questionItem;
     private File recordFile;
     private AudioRecorder audioRecorder;
     private RecordAudioCallback recordAudioCallback;
@@ -32,7 +31,7 @@ public class RecordAudioImpl {
     public RecordAudioImpl(Context context,
                            RecordView recordView,
                            RecordButton recordButton,
-                           VideoQuestionItem questionItem,
+                           QuestionItem questionItem,
                            RecordAudioCallback recordAudioCallback) {
         this.context = context;
         this.recordView = recordView;
@@ -145,6 +144,6 @@ public class RecordAudioImpl {
 
     public interface RecordAudioCallback {
         void requestAudioPermission(RecordView view);
-        void uploadRecordedAudio(AudioAnswer recordFile, VideoQuestionItem questionItem);
+        void uploadRecordedAudio(AudioAnswer recordFile, QuestionItem questionItem);
     }
 }

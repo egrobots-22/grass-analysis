@@ -2,7 +2,7 @@ package com.egrobots.grassanalysis.data.model;
 
 import java.util.List;
 
-public class VideoQuestionItem {
+public class QuestionItem {
     private String id;
     private String deviceToken;
     private String videoQuestionUri;
@@ -66,5 +66,10 @@ public class VideoQuestionItem {
 
     public boolean isJustUploaded() {
         return justUploaded;
+    }
+
+    public enum RecordType {
+        VIDEO,
+        IMAGE;
     }
 }

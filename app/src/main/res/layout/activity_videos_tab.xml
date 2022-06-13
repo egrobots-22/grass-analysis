@@ -37,6 +37,19 @@
             android:scaleType="fitCenter"
             android:src="@drawable/ic_record_video" />
 
+        <ImageButton
+            android:id="@+id/capture_new_image"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:layout_below="@id/record_new_video"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="8dp"
+            android:background="@null"
+            android:elevation="8dp"
+            android:tint="@android:color/holo_orange_light"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_capture_image" />
+
     </RelativeLayout>
 
 </FrameLayout>

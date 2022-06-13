@@ -5,13 +5,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
-import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 
@@ -27,7 +26,7 @@ import butterknife.ButterKnife;
 
 public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewHolder> {
 
-    public List<VideoQuestionItem> videoQuestionItems = new ArrayList<>();
+    public List<QuestionItem> questionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private DatabaseRepository databaseRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();
@@ -45,7 +44,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
     @Override
     public void onBindViewHolder(@NonNull VideoViewHolder holder, int position) {
-        VideoQuestionItem questionItem = videoQuestionItems.get(position);
+        QuestionItem questionItem = questionItems.get(position);
         managers.get(position).initializePlayer(holder.playerView);
         //get audio files for current video question
         holder.setRecordAudioView(questionItem);
@@ -54,21 +53,21 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
     @Override
     public int getItemCount() {
-        return videoQuestionItems.size();
+        return questionItems.size();
     }
 
-    public void addNewVideo(Context context, VideoQuestionItem videoQuestionItem) {
-        videoQuestionItems.add(0, videoQuestionItem);
+    public void addNewVideo(Context context, QuestionItem questionItem) {
+        questionItems.add(0, questionItem);
         notifyItemInserted(0);
         ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
 //        ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
-        exoPlayerVideoManager.initializeExoPlayer(context, videoQuestionItem.getVideoQuestionUri());
+        exoPlayerVideoManager.initializeExoPlayer(context, questionItem.getVideoQuestionUri());
         managers.add(0, exoPlayerVideoManager);
     }
 
-    public void addAll(Context context, List<VideoQuestionItem> itemsList) {
-        videoQuestionItems.addAll(itemsList);
-        for (VideoQuestionItem item : itemsList) {
+    public void addAll(Context context, List<QuestionItem> itemsList) {
+        questionItems.addAll(itemsList);
+        for (QuestionItem item : itemsList) {
             ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
 //            ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
             exoPlayerVideoManager.initializeExoPlayer(context, item.getVideoQuestionUri());
@@ -107,12 +106,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             ButterKnife.bind(this, itemView);
         }
 
-        private void setRecordAudioView(VideoQuestionItem questionItem) {
+        private void setRecordAudioView(QuestionItem questionItem) {
             RecordAudioImpl recordAudioImpl = new RecordAudioImpl(itemView.getContext(), recordView, recordButton, questionItem, recordAudioCallback);
             recordAudioImpl.setupRecordAudio();
         }
 
-        private void setupAudioFilesRecyclerView(VideoQuestionItem questionItem) {
+        private void setupAudioFilesRecyclerView(QuestionItem questionItem) {
             AudioAdapters audioAdapters = new AudioAdapters(databaseRepository);
             audioFilesRecyclerView.setAdapter(audioAdapters);
             audioFilesRecyclerView.setLayoutManager(new LinearLayoutManager(itemView.getContext()));

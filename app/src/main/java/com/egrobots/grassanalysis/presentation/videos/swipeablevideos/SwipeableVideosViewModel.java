@@ -5,10 +5,9 @@ import android.util.Log;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.LocalDataRepository;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
-import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.utils.StateResource;
 
-import java.io.File;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,7 +27,7 @@ public class SwipeableVideosViewModel extends ViewModel {
     private DatabaseRepository databaseRepository;
     private LocalDataRepository localDataRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
-    private MediatorLiveData<List<VideoQuestionItem>> videoUris = new MediatorLiveData<>();
+    private MediatorLiveData<List<QuestionItem>> videoUris = new MediatorLiveData<>();
     private MediatorLiveData<Boolean> existVideosState = new MediatorLiveData<>();
     private MediatorLiveData<StateResource> uploadAudioState = new MediatorLiveData<>();
 
@@ -43,14 +42,14 @@ public class SwipeableVideosViewModel extends ViewModel {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()
-                .subscribe(new Observer<VideoQuestionItem>() {
+                .subscribe(new Observer<QuestionItem>() {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
                     }
 
                     @Override
-                    public void onNext(VideoQuestionItem questionItem) {
+                    public void onNext(QuestionItem questionItem) {
                         videoUris.setValue(null);
                     }
 
@@ -120,14 +119,14 @@ public class SwipeableVideosViewModel extends ViewModel {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()
-                .subscribe(new Observer<List<VideoQuestionItem>>() {
+                .subscribe(new Observer<List<QuestionItem>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
                         disposable.add(d);
                     }
 
                     @Override
-                    public void onNext(List<VideoQuestionItem> videoItems) {
+                    public void onNext(List<QuestionItem> videoItems) {
                         videoUris.setValue(videoItems);
                     }
 
@@ -143,7 +142,7 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public void uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem) {
+    public void uploadRecordedAudio(AudioAnswer audioAnswer, QuestionItem questionItem) {
         databaseRepository.uploadRecordedAudio(audioAnswer, questionItem, localDataRepository.getUsername())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -166,7 +165,7 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public MediatorLiveData<List<VideoQuestionItem>> observeVideoUris() {
+    public MediatorLiveData<List<QuestionItem>> observeVideoUris() {
         return videoUris;
     }
 

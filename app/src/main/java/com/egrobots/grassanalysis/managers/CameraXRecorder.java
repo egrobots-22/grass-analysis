@@ -4,17 +4,22 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.content.Context;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.widget.Toast;
+import android.util.Log;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.io.File;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
+import androidx.annotation.NonNull;
 import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.video.MediaStoreOutputOptions;
@@ -39,6 +44,7 @@ public class CameraXRecorder {
     private ListenableFuture<ProcessCameraProvider> cameraProviderFuture;
     private CameraXCallback cameraXCallback;
     private ProcessCameraProvider cameraProvider;
+    private ImageCapture imageCapture;
 
     public CameraXRecorder(Context context, PreviewView previewView, CameraXCallback cameraXCallback) {
         this.context = context;
@@ -77,15 +83,43 @@ public class CameraXRecorder {
                 .build();
 
 
-
-
         videoCapture = VideoCapture.withOutput(recorder);
+        imageCapture = new ImageCapture.Builder().build();
 
         //bind to lifecycle:
-        cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, videoCapture);
+        cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, videoCapture, imageCapture);
     }
 
-    @SuppressLint("RestrictedApi")
+    public void captureImage() {
+        if (imageCapture != null) {
+            long timestamp = System.currentTimeMillis();
+            ContentValues contentValues = new ContentValues();
+            contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, timestamp);
+            contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
+                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraX-Video");
+            }
+            ImageCapture.OutputFileOptions outputFileOptions = new ImageCapture.OutputFileOptions.Builder(
+                    context.getContentResolver(),
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues).build();
+            imageCapture.takePicture(outputFileOptions,
+                    getExecutor(),
+                    new ImageCapture.OnImageSavedCallback() {
+                        @Override
+                        public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                            Uri imageUri = outputFileResults.getSavedUri();
+                            cameraXCallback.onCaptureImage(imageUri);
+                        }
+
+                        @Override
+                        public void onError(@NonNull ImageCaptureException exception) {
+                            Log.i("Image Capture", "onError: " + exception);
+                        }
+                    });
+        }
+    }
+
     public void recordVideo() {
         if (videoCapture != null) {
             cameraXCallback.onPreparingRecording();
@@ -147,8 +181,13 @@ public class CameraXRecorder {
 
     public interface CameraXCallback {
         void onPreparingRecording();
+
         void onStartRecording();
+
         void onStopRecording(Uri videoUri);
+
         void onError(String error);
+
+        void onCaptureImage(Uri imageUri);
     }
 }

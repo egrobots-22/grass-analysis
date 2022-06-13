@@ -5,7 +5,9 @@ import android.os.Bundle;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.ViewPagerAdapter;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity2;
+import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -44,8 +46,17 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
     }
 
     @OnClick(R.id.record_new_video)
-    public void onRecordViewClicked() {
-        startActivity(new Intent(this, RecordScreenActivity2.class));
+    public void onRecordVideoClicked() {
+        Intent intent = new Intent(this, RecordScreenActivity2.class);
+        intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.VIDEO);
+        startActivity(intent);
+    }
+
+    @OnClick(R.id.capture_new_image)
+    public void onCaptureImageClicked() {
+        Intent intent = new Intent(this, RecordScreenActivity2.class);
+        intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.IMAGE);
+        startActivity(intent);
     }
 
 }

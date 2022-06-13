@@ -18,7 +18,7 @@ import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
-import com.egrobots.grassanalysis.data.model.VideoQuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.network.NetworkStateManager;
 import com.egrobots.grassanalysis.services.MyUploadService;
@@ -70,14 +70,14 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Inject
     VideosAdapter videosAdapter;
 
-    private List<VideoQuestionItem> itemsList = new ArrayList<>();
+    private List<QuestionItem> itemsList = new ArrayList<>();
     private SwipeableVideosViewModel swipeableVideosViewModel;
     private boolean isCurrentUser;
     private ExoPlayerVideoManager exoPlayerVideoManagerCur;
     private int prevPosition = -1;
     private long lastTimestamp;
     private BroadcastReceiver mBroadcastReceiver;
-    private VideoQuestionItem latestVideoItem;
+    private QuestionItem latestVideoItem;
     private Boolean networkState = null;
 
     public SwipeableVideosFragment() {
@@ -201,7 +201,7 @@ public class SwipeableVideosFragment extends DaggerFragment
     recording audios
      */
     @Override
-    public void uploadRecordedAudio(AudioAnswer audioAnswer, VideoQuestionItem questionItem) {
+    public void uploadRecordedAudio(AudioAnswer audioAnswer, QuestionItem questionItem) {
         if (networkState) {
             swipeableVideosViewModel.uploadRecordedAudio(audioAnswer, questionItem);
         } else {
@@ -325,7 +325,7 @@ public class SwipeableVideosFragment extends DaggerFragment
             exoPlayerVideoManagerCur.setExoPlayerCallback(SwipeableVideosFragment.this);
             exoPlayerVideoManagerCur.getPlayerView().hideController();
             exoPlayerVideoManagerCur.play();
-            int curAdapterSize = videosAdapter.videoQuestionItems.size();
+            int curAdapterSize = videosAdapter.questionItems.size();
             if (prevPosition < position && position == curAdapterSize - 1) {
                 //get next block of videos
                 if (networkState) {

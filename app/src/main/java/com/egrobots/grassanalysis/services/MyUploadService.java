@@ -10,6 +10,7 @@ import com.arthenica.mobileffmpeg.Config;
 import com.arthenica.mobileffmpeg.ExecuteCallback;
 import com.arthenica.mobileffmpeg.FFmpeg;
 import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.datasource.locale.SharedPreferencesDataSource;
 import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 import com.egrobots.grassanalysis.presentation.videos.VideosTabActivity;
@@ -49,6 +50,7 @@ public class MyUploadService extends MyBaseTaskService {
     public static final String UPLOAD_COMPLETED = "upload_completed";
     public static final String UPLOAD_ERROR = "upload_error";
     public static final String FILE_TYPE = "file_type";
+    public static final String RECORD_TYPE = Constants.RECORD_TYPE;
 
     /**
      * Intent Extras
@@ -90,28 +92,34 @@ public class MyUploadService extends MyBaseTaskService {
         if (ACTION_UPLOAD.equals(intent.getAction())) {
             Uri fileUri = intent.getParcelableExtra(EXTRA_FILE_URI);
             String fileType = intent.getStringExtra(FILE_TYPE);
-            uploadFromUri(fileUri, fileType);
+            QuestionItem.RecordType recordType = (QuestionItem.RecordType) intent.getExtras().get(RECORD_TYPE);
+            uploadFromUri(fileUri, fileType, recordType);
         }
         return START_REDELIVER_INTENT;
     }
 
     // [START upload_from_uri]
-    private void uploadFromUri(final Uri videoUri, String fileType) {
-        Log.d(TAG, "uploadFromUri:src:" + videoUri.toString());
+    private void uploadFromUri(final Uri fileUri, String fileType, QuestionItem.RecordType recordType) {
+        Log.d(TAG, "uploadFromUri:src:" + fileUri.toString());
 
         // [START_EXCLUDE]
         taskStarted();
         // [END_EXCLUDE]
 
-        // Upload file to Firebase Storage
-        if (!COMPRESS_VIDEO) {
+        if (recordType == QuestionItem.RecordType.IMAGE) {
             showProgressNotification(getString(R.string.progress_uploading), 0, 0);
-            uploadToFirebaseStorage(videoUri, fileType);
+            uploadToFirebaseStorage(fileUri, fileType);
         } else {
-            showProgressNotification(getString(R.string.compressing), 0, 0);
-            String input = utils.getPathFromUri(videoUri);
-            String output = utils.getCompressedPath(videoUri);
-            execFFmpegBinary(input, output);
+            // Upload file to Firebase Storage
+            if (!COMPRESS_VIDEO) {
+                showProgressNotification(getString(R.string.progress_uploading), 0, 0);
+                uploadToFirebaseStorage(fileUri, fileType);
+            } else {
+                showProgressNotification(getString(R.string.compressing), 0, 0);
+                String input = utils.getPathFromUri(fileUri);
+                String output = utils.getCompressedPath(fileUri);
+                execFFmpegBinary(input, output);
+            }
         }
     }
 

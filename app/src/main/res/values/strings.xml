@@ -19,7 +19,7 @@
 
     <string name="upload_success">Upload finished</string>
     <string name="upload_failure">Upload failed</string>
-    <string name="uploading_in_progress">جاري تحميل الفيديو</string>
+    <string name="uploading_in_progress">جاري التحميل</string>
     <string name="compressing">Compressing..</string>
     <string name="no_current_questions">لا يوجد أسئلة حالية</string>
     <string name="no_intenet_connection">لا يوجد اتصال بالانترنت</string>
