@@ -269,7 +269,7 @@ public class FirebaseDataSource {
                                         .addOnCompleteListener(task -> {
                                             //sent the item to the user
                                             questionItem.setIsJustUploaded(false);
-                                            questionItem.setId(Constants.UPLOADED);
+                                            questionItem.setFlag(Constants.UPLOADED);
                                             List<QuestionItem> uploadedItemList = new ArrayList<>();
                                             uploadedItemList.add(questionItem);
                                             emitter.onNext(uploadedItemList);
@@ -285,7 +285,7 @@ public class FirebaseDataSource {
                                     } else if (size == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
                                         //retrieve data again
                                         QuestionItem latestItem = new QuestionItem();
-                                        latestItem.setId(Constants.LATEST);
+                                        latestItem.setFlag(Constants.LATEST);
                                         latestItem.setTimestamp(questionItem.getTimestamp());
                                         videoItems.add(latestItem);
                                         emitter.onNext(videoItems);

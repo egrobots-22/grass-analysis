@@ -168,13 +168,17 @@ public class SwipeableVideosFragment extends DaggerFragment
                 showEmptyView(false);
                 if (videoItems.size() == 0) {
                     Toast.makeText(getContext(), R.string.no_more_videos, Toast.LENGTH_SHORT).show();
-                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals(Constants.LATEST)) {
+                } else if (videoItems.size() == 1 &&
+                        videoItems.get(0).getFlag() != null &&
+                        videoItems.get(0).getFlag().equals(Constants.LATEST)) {
                     //retrieve another data ==> videoItems.get(0) is the latest video sent, so we get it's timestamp
                     swipeableVideosViewModel.getNextOtherUsersVideos(
                             videoItems.get(0).getTimestamp() + 1,
                             isCurrentUser,
                             false);
-                } else if (videoItems.size() == 1 && videoItems.get(0).getId().equals(Constants.UPLOADED)) {
+                } else if (videoItems.size() == 1 &&
+                        videoItems.get(0).getFlag() != null &&
+                        videoItems.get(0).getFlag().equals(Constants.UPLOADED)) {
                     //uploaded video
                     videosAdapter.addNewVideo(getContext(), videoItems.get(0));
                 } else {
@@ -206,7 +210,7 @@ public class SwipeableVideosFragment extends DaggerFragment
             swipeableVideosViewModel.uploadRecordedAudio(audioAnswer, questionItem);
         } else {
             Toast.makeText(getContext(),
-                    getString(R.string.no_intenet_connection) +", " + getString(R.string.connect_try_again)
+                    getString(R.string.no_intenet_connection) + ", " + getString(R.string.connect_try_again)
                     , Toast.LENGTH_SHORT).show();
         }
     }
@@ -337,7 +341,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                     swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
                 } else {
                     Toast.makeText(getContext(),
-                            getString(R.string.no_intenet_connection) + ", "  + getString(R.string.connect_try_again)
+                            getString(R.string.no_intenet_connection) + ", " + getString(R.string.connect_try_again)
                             , Toast.LENGTH_SHORT).show();
                 }
             }

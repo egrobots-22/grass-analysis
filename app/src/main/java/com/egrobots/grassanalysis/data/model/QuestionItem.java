@@ -11,6 +11,7 @@ public class QuestionItem {
     private long timestamp;
     private String type;
     private boolean justUploaded;
+    private String flag;
 
     public String getId() {
         return id;
@@ -75,6 +76,14 @@ public class QuestionItem {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getFlag() {
+        return flag;
+    }
+
+    public void setFlag(String flag) {
+        this.flag = flag;
     }
 
     public enum RecordType {
