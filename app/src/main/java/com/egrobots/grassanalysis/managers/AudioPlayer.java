@@ -29,17 +29,19 @@ public class AudioPlayer {
             mediaPlayer.setDataSource(audioUri);
             mediaPlayer.prepare();
             mediaPlayer.start();
-            audioPlayCallback.onStartPlayingAnswerAudio();
+            audioPlayCallback.onStartPlayingAnswerAudio(this);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void pauseAudio() {
+    public void stopAudio() {
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
             mediaPlayer.reset();
             mediaPlayer.release();
+            audioPlayCallback.onFinishPlayingAnswerAudio();
+            mediaPlayer = null;
         }
     }
 
@@ -85,6 +87,6 @@ public class AudioPlayer {
     public interface AudioPlayCallback {
         void onFinishPlayingAnswerAudio();
 
-        void onStartPlayingAnswerAudio();
+        void onStartPlayingAnswerAudio(AudioPlayer audioPlayer);
     }
 }

@@ -1,10 +1,6 @@
 package com.egrobots.grassanalysis.adapters;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,14 +12,11 @@ import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
-import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,28 +55,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public void onBindViewHolder(@NonNull VideoViewHolder holder, int position) {
         QuestionItem questionItem = questionItems.get(position);
         if (questionItem.getType() == null || questionItem.getType().contains("mp4")) {
-            holder.playerView.setVisibility(View.VISIBLE);
-            holder.imageView.setVisibility(View.GONE);
+            holder.exoThumbnail.setVisibility(View.GONE);
         } else {
-            holder.playerView.setVisibility(View.GONE);
-            holder.imageView.setVisibility(View.VISIBLE);
+            holder.exoThumbnail.setVisibility(View.VISIBLE);
             Glide.with(holder.itemView.getContext())
                     .load(questionItem.getQuestionMediaUri())
-                    .into(holder.imageView);
-            /*
-            ** another option: but low performance
-             executorService.submit(() -> {
-                    try {
-                        InputStream url = new java.net.URL(item.getQuestionMediaUri()).openStream();
-                        Bitmap bitmap = BitmapFactory.decodeStream(url);
-                        Drawable drawable = new BitmapDrawable(context.getResources(), bitmap);
-                        exoPlayerAudioManager.setCapturedImageToPlayer(drawable);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                });
-
-             */
+                    .into(holder.exoThumbnail);
         }
         managers.get(position).initializePlayer(holder.playerView);
 
@@ -159,8 +136,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         RecyclerView audioFilesRecyclerView;
         @BindView(R.id.videoView)
         PlayerView playerView;
-        @BindView(R.id.imageView)
-        ImageView imageView;
+        @BindView(R.id.exo_thumbnail)
+        ImageView exoThumbnail;
         AudioAdapters audioAdapters;
 
         public VideoViewHolder(@NonNull View itemView) {

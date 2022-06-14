@@ -1,5 +1,6 @@
 package com.egrobots.grassanalysis.adapters;
 
+import android.media.MediaPlayer;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -149,7 +150,7 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         public void onPauseClicked() {
             playButton.setVisibility(View.VISIBLE);
             pauseButton.setVisibility(View.GONE);
-            audioPlayer.pauseAudio();
+            audioPlayer.stopAudio();
         }
 
         @OnClick(R.id.playButton)
@@ -160,8 +161,8 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         }
 
         @Override
-        public void onStartPlayingAnswerAudio() {
-            audioPlayCallback.onStartPlayingAnswerAudio();
+        public void onStartPlayingAnswerAudio(AudioPlayer audioPlayer) {
+            audioPlayCallback.onStartPlayingAnswerAudio(audioPlayer);
         }
 
         @Override

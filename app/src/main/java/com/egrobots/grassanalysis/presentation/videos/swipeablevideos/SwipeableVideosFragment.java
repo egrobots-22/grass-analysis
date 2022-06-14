@@ -80,6 +80,7 @@ public class SwipeableVideosFragment extends DaggerFragment
     private BroadcastReceiver mBroadcastReceiver;
     private QuestionItem latestVideoItem;
     private Boolean networkState = null;
+    private AudioPlayer audioPlayer;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -212,6 +213,8 @@ public class SwipeableVideosFragment extends DaggerFragment
         if (exoPlayerVideoManagerCur != null) {
             exoPlayerVideoManagerCur.pausePlayer();
         }
+        if (audioPlayer != null)
+            audioPlayer.stopAudio();
     }
 
     @Override
@@ -297,22 +300,21 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Override
     public void onPause() {
         super.onPause();
-        if (exoPlayerVideoManagerCur != null) {
-            exoPlayerVideoManagerCur.pausePlayer();
-        }
+        if (exoPlayerVideoManagerCur != null) exoPlayerVideoManagerCur.pausePlayer();
+        if (audioPlayer != null) audioPlayer.stopAudio();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (exoPlayerVideoManagerCur != null) {
-            exoPlayerVideoManagerCur.pausePlayer();
-        }
+        if (exoPlayerVideoManagerCur != null) exoPlayerVideoManagerCur.pausePlayer();
+        if (audioPlayer != null) audioPlayer.stopAudio();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (audioPlayer != null) audioPlayer.stopAudio();
         for (ExoPlayerVideoManager manager : videosAdapter.getCurrentExoPlayerManagerList()) {
             manager.stopPlayer();
             manager.releasePlayer();
@@ -341,7 +343,8 @@ public class SwipeableVideosFragment extends DaggerFragment
     }
 
     @Override
-    public void onStartPlayingAnswerAudio() {
+    public void onStartPlayingAnswerAudio(AudioPlayer audioPlayer) {
+        this.audioPlayer = audioPlayer;
         if (exoPlayerVideoManagerCur != null) {
             exoPlayerVideoManagerCur.pausePlayer();
         }
@@ -350,6 +353,8 @@ public class SwipeableVideosFragment extends DaggerFragment
     class OnVideoChangeCallback extends ViewPager2.OnPageChangeCallback {
         @Override
         public void onPageSelected(int position) {
+            if (audioPlayer != null)
+                audioPlayer.stopAudio();
             if (prevPosition != -1) {
                 ExoPlayerVideoManager exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
                 if (exoPlayerVideoManagerPrev != null) {
