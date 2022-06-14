@@ -1,6 +1,10 @@
 package com.egrobots.grassanalysis.adapters;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,12 +16,17 @@ import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
+import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 
+import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import androidx.annotation.NonNull;
 import androidx.media3.ui.PlayerView;
@@ -32,6 +41,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private DatabaseRepository databaseRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public VideosAdapter(DatabaseRepository databaseRepository) {
         this.databaseRepository = databaseRepository;
@@ -56,6 +66,20 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             Glide.with(holder.itemView.getContext())
                     .load(questionItem.getQuestionMediaUri())
                     .into(holder.imageView);
+            /*
+            ** another option: but low performance
+             executorService.submit(() -> {
+                    try {
+                        InputStream url = new java.net.URL(item.getQuestionMediaUri()).openStream();
+                        Bitmap bitmap = BitmapFactory.decodeStream(url);
+                        Drawable drawable = new BitmapDrawable(context.getResources(), bitmap);
+                        exoPlayerAudioManager.setCapturedImageToPlayer(drawable);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+
+             */
         }
         managers.get(position).initializePlayer(holder.playerView);
 
@@ -78,7 +102,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             managers.add(0, exoPlayerVideoManager);
         } else {
             ExoPlayerVideoManager exoPlayerAudioManager = new ExoPlayerVideoManager();
-            exoPlayerAudioManager.initializeAudioExoPlayer(context, questionItem.getQuestionAudioUri());
+            exoPlayerAudioManager.initializeAudioExoPlayer(context, questionItem.getQuestionAudioUri(), false);
             managers.add(0, exoPlayerAudioManager);
         }
     }
@@ -92,7 +116,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 managers.add(exoPlayerVideoManager);
             } else {
                 ExoPlayerVideoManager exoPlayerAudioManager = new ExoPlayerVideoManager();
-                exoPlayerAudioManager.initializeAudioExoPlayer(context, item.getQuestionAudioUri());
+                exoPlayerAudioManager.initializeAudioExoPlayer(context, item.getQuestionAudioUri(), false);
                 managers.add(exoPlayerAudioManager);
             }
         }

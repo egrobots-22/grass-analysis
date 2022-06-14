@@ -57,7 +57,7 @@ public class ExoPlayerVideoManager {
         }
     }
 
-    public void initializeAudioExoPlayer(Context context, String audioUri) {
+    public void initializeAudioExoPlayer(Context context, String audioUri, boolean playWhenReady) {
         this.context = context;
         exoPlayer = new ExoPlayer.Builder(context).build();
         MediaItem mediaItem = MediaItem.fromUri(audioUri);
@@ -66,7 +66,11 @@ public class ExoPlayerVideoManager {
         exoPlayer.seekTo(currentItem, playbackPosition);
         exoPlayer.setRepeatMode(Player.REPEAT_MODE_ONE);
         exoPlayer.prepare();
-        exoPlayer.play();
+        if (playWhenReady) {
+            exoPlayer.play();
+        } else {
+            exoPlayer.pause();
+        }
     }
 
     public void initializeExoPlayer(Context context, String videoUri) {
@@ -139,7 +143,7 @@ public class ExoPlayerVideoManager {
     }
 
     public void setCapturedImageToPlayer(Drawable image) {
-        playerView.setDefaultArtwork(ContextCompat.getDrawable(context, R.drawable.background));
+        playerView.setDefaultArtwork(image);
     }
 
     public PlayerView getPlayerView() {

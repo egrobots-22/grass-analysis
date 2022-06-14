@@ -4,13 +4,13 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -76,7 +76,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private Handler handler = new Handler();
     private Runnable updateEverySecRunnable;
     private Uri fileUri;
-    private ExoPlayerVideoManager exoPlayerVideoManager;
+    private ExoPlayerVideoManager exoPlayerManager;
     private QuestionItem.RecordType recordType;
     private AudioRecorder audioRecorder = new AudioRecorder();
     private File audioRecordedFile;
@@ -90,8 +90,18 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         //get type of camera
         if (getIntent() != null) {
             recordType = (QuestionItem.RecordType) getIntent().getExtras().get(Constants.RECORD_TYPE);
+            fileUri = getIntent().getParcelableExtra(Constants.SELECTED_IMAGE_VIDEO);
+            if (fileUri == null) {
+                initializeCameraX();
+            } else {
+                if (recordType == QuestionItem.RecordType.VIDEO) {
+                    showRecordedVideo(fileUri);
+                } else if (recordType == QuestionItem.RecordType.IMAGE) {
+                    onCaptureImage(fileUri);
+                    onStartRecordingAudio();
+                }
+            }
         }
-        initializeCameraX();
     }
 
     private void initializeCameraX() {
@@ -107,10 +117,17 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @OnClick(R.id.video_capture_button)
     public void onVideoRecordClicked() {
-        if (recordType == QuestionItem.RecordType.VIDEO) {
-            cameraXRecorder.recordVideo();
+        if (cameraXRecorder == null) {
+            //file is selected, in this case, recording button will be shown only when selecting image to record the audio
+            //so here we'll stop recording audio
+            onStopRecordingAudio();
         } else {
-            cameraXRecorder.captureImage();
+            //file is recorded
+            if (recordType == QuestionItem.RecordType.VIDEO) {
+                cameraXRecorder.recordVideo();
+            } else {
+                cameraXRecorder.captureImage();
+            }
         }
     }
 
@@ -149,6 +166,10 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
         handler.removeCallbacks(updateEverySecRunnable);
+        showRecordedVideo(videoUri);
+    }
+
+    private void showRecordedVideo(Uri videoUri) {
         //show review view to accept or cancel video
         reviewView.setVisibility(View.VISIBLE);
         //hide record button
@@ -156,13 +177,9 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         //show recorded video
         playerView.setVisibility(View.VISIBLE);
         previewView.setVisibility(View.GONE);
-        showRecordedVideo(videoUri);
-    }
-
-    private void showRecordedVideo(Uri videoUri) {
-        exoPlayerVideoManager = new ExoPlayerVideoManager();
-        exoPlayerVideoManager.initializeExoPlayer(this, utils.getPathFromUri(videoUri));
-        exoPlayerVideoManager.initializePlayer(playerView);
+        exoPlayerManager = new ExoPlayerVideoManager();
+        exoPlayerManager.initializeExoPlayer(this, videoUri.toString());
+        exoPlayerManager.initializePlayer(playerView);
     }
 
     @OnClick(R.id.done_button)
@@ -176,17 +193,17 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
                 startUploadingVideoService(fileUri, audioRecordedFile.getPath(), fileType);
             }
             //release exoplayer
-            if (exoPlayerVideoManager != null) {
-                exoPlayerVideoManager.releasePlayer();
+            if (exoPlayerManager != null) {
+                exoPlayerManager.releasePlayer();
             }
         }
     }
 
     @OnClick(R.id.cancel_button)
     public void onCancelButton() {
-        if (exoPlayerVideoManager != null) {
+        if (exoPlayerManager != null) {
             //release exoplayer
-            exoPlayerVideoManager.releasePlayer();
+            exoPlayerManager.releasePlayer();
         }
         recordedSeconds = 0;
         recordedSecondsTV.setText("");
@@ -253,21 +270,20 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         playerView.setVisibility(View.GONE);
         imageView.setVisibility(View.VISIBLE);
         //show image with audio
-        exoPlayerVideoManager = new ExoPlayerVideoManager();
-        exoPlayerVideoManager.initializeAudioExoPlayer(this, audioRecordedFile.getPath());
-        exoPlayerVideoManager.initializePlayer(playerView);
+        exoPlayerManager = new ExoPlayerVideoManager();
+        exoPlayerManager.initializeAudioExoPlayer(this, audioRecordedFile.getPath(), true);
+        exoPlayerManager.initializePlayer(playerView);
         //set captured image to the exoplayer
-//        imageView.setVisibility(View.GONE);
-//        String path = audioRecordedFile.getPath();
-//        String aPath = audioRecordedFile.getAbsolutePath();
-//        String filesPath = getFilesDir().getPath();
-//        try {
-//            Bitmap bitmap = BitmapFactory.decodeFile(audioRecordedFile.getAbsolutePath());
-//            Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-//            exoPlayerVideoManager.setCapturedImageToPlayer(drawable);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
+        imageView.setVisibility(View.GONE);
+        playerView.setVisibility(View.VISIBLE);
+        try {
+//            Bitmap bitmap = BitmapFactory.decodeFile(RealPathUtil.getRealPath(this, fileUri));
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), fileUri);
+            Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+            exoPlayerManager.setCapturedImageToPlayer(drawable);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void deleteRecordedAudio() {
@@ -296,13 +312,34 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        handler.removeCallbacks(updateEverySecRunnable);
+        if (handler != null) {
+            handler.removeCallbacks(updateEverySecRunnable);
+        }
+        if (exoPlayerManager != null) {
+            exoPlayerManager.releasePlayer();
+        }
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        handler.removeCallbacks(updateEverySecRunnable);
+        if (handler != null) {
+            handler.removeCallbacks(updateEverySecRunnable);
+        }
+        if (exoPlayerManager != null) {
+            exoPlayerManager.releasePlayer();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (handler != null) {
+            handler.removeCallbacks(updateEverySecRunnable);
+        }
+        if (exoPlayerManager != null) {
+            exoPlayerManager.releasePlayer();
+        }
     }
 
     @Override

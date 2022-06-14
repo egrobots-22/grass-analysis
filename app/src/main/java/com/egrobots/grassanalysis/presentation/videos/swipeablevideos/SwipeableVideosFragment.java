@@ -235,7 +235,9 @@ public class SwipeableVideosFragment extends DaggerFragment
             @Override
             public void onReceive(Context context, Intent intent) {
                 if (MyUploadService.UPLOAD_COMPLETED.equals(Objects.requireNonNull(intent.getAction()))) {
-                    Toast.makeText(getContext(), R.string.uploaded_done_successfully, Toast.LENGTH_SHORT).show();
+                    if (getContext() != null) {
+                        Toast.makeText(getContext(), R.string.uploaded_done_successfully, Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         };
