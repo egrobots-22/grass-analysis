@@ -56,6 +56,7 @@ public class MyUploadService extends MyBaseTaskService {
      * Intent Extras
      **/
     public static final String EXTRA_FILE_URI = "extra_file_uri";
+    public static final String EXTRA_AUDIO_URI = "extra_audio_uri";
     public static final String EXTRA_DOWNLOAD_URL = "extra_download_url";
 
     // [START declare_ref]
@@ -91,15 +92,16 @@ public class MyUploadService extends MyBaseTaskService {
         Log.d(TAG, "onStartCommand:" + intent + ":" + startId);
         if (ACTION_UPLOAD.equals(intent.getAction())) {
             Uri fileUri = intent.getParcelableExtra(EXTRA_FILE_URI);
+            String questionAudioUri = intent.getStringExtra(EXTRA_AUDIO_URI);
             String fileType = intent.getStringExtra(FILE_TYPE);
             QuestionItem.RecordType recordType = (QuestionItem.RecordType) intent.getExtras().get(RECORD_TYPE);
-            uploadFromUri(fileUri, fileType, recordType);
+            uploadFromUri(fileUri, fileType, questionAudioUri, recordType);
         }
         return START_REDELIVER_INTENT;
     }
 
     // [START upload_from_uri]
-    private void uploadFromUri(final Uri fileUri, String fileType, QuestionItem.RecordType recordType) {
+    private void uploadFromUri(final Uri fileUri, String fileType, String questionAudioUri, QuestionItem.RecordType recordType) {
         Log.d(TAG, "uploadFromUri:src:" + fileUri.toString());
 
         // [START_EXCLUDE]
@@ -108,12 +110,12 @@ public class MyUploadService extends MyBaseTaskService {
 
         if (recordType == QuestionItem.RecordType.IMAGE) {
             showProgressNotification(getString(R.string.progress_uploading), 0, 0);
-            uploadToFirebaseStorage(fileUri, fileType);
+            uploadToFirebaseStorage(fileUri, fileType, questionAudioUri);
         } else {
             // Upload file to Firebase Storage
             if (!COMPRESS_VIDEO) {
                 showProgressNotification(getString(R.string.progress_uploading), 0, 0);
-                uploadToFirebaseStorage(fileUri, fileType);
+                uploadToFirebaseStorage(fileUri, fileType, null);
             } else {
                 showProgressNotification(getString(R.string.compressing), 0, 0);
                 String input = utils.getPathFromUri(fileUri);
@@ -123,9 +125,10 @@ public class MyUploadService extends MyBaseTaskService {
         }
     }
 
-    private void uploadToFirebaseStorage(Uri videoUri, String fileType) {
-        firebaseDataSource.uploadVideoAsService(videoUri
+    private void uploadToFirebaseStorage(Uri fileUri, String fileType, String questionAudioUri) {
+        firebaseDataSource.uploadVideoAsService(fileUri
                 , fileType
+                , questionAudioUri
                 , sharedPreferencesDataSource.getDeviceToken()
                 , sharedPreferencesDataSource.getUserName())
                 .subscribeOn(Schedulers.io())
@@ -155,8 +158,8 @@ public class MyUploadService extends MyBaseTaskService {
                         Log.d(TAG, "uploadFromUri: getDownloadUri success");
 
                         // [START_EXCLUDE]
-                        broadcastUploadFinished(videoUri, videoUri);
-                        showUploadFinishedNotification(videoUri, videoUri);
+                        broadcastUploadFinished(fileUri, fileUri);
+                        showUploadFinishedNotification(fileUri, fileUri);
                         taskCompleted();
                         // [END_EXCLUDE]
                     }
@@ -218,7 +221,7 @@ public class MyUploadService extends MyBaseTaskService {
                 if (returnCode == RETURN_CODE_SUCCESS) {
                     Uri outputUri = FileProvider.getUriForFile(getApplicationContext(),
                             getApplicationContext().getPackageName() + ".provider", new File(output));
-                    uploadToFirebaseStorage(outputUri, utils.getFieType(outputUri));
+                    uploadToFirebaseStorage(outputUri, utils.getFieType(outputUri), null);
                     showProgressNotification(getString(R.string.compressing), 10, 1000);
                 } else if (returnCode == RETURN_CODE_CANCEL) {
                     Log.i(Config.TAG, "Async command execution cancelled by user.");

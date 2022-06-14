@@ -3,6 +3,10 @@ package com.egrobots.grassanalysis.presentation.recordscreen;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,6 +19,7 @@ import android.widget.Toast;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.managers.AudioRecorder;
 import com.egrobots.grassanalysis.managers.CameraXRecorder;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.services.MyUploadService;
@@ -22,6 +27,10 @@ import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.LoadingDialog;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -69,6 +78,8 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private Uri fileUri;
     private ExoPlayerVideoManager exoPlayerVideoManager;
     private QuestionItem.RecordType recordType;
+    private AudioRecorder audioRecorder = new AudioRecorder();
+    private File audioRecordedFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,12 +121,13 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @Override
     public void onStartRecording() {
+        recordedSecondsTV.setText("00:00");
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.stop_record));
         updateEverySecRunnable = new Runnable() {
             @Override
             public void run() {
-                recordedSeconds++;
+                ++recordedSeconds;
                 String seconds = recordedSeconds < 10 ? "0" + recordedSeconds : recordedSeconds + "";
                 recordedSecondsTV.setText(String.format("00:%s", seconds));
                 if (recordedSeconds == MAX_VID_DURATION) {
@@ -157,7 +169,12 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     public void onDoneClicked() {
         if (fileUri != null) {
             String fileType = utils.getFieType(fileUri);
-            startUploadingVideoService(fileUri, fileType);
+            if (recordType == QuestionItem.RecordType.VIDEO) {
+                startUploadingVideoService(fileUri, null, fileType);
+            } else if (recordType == QuestionItem.RecordType.IMAGE){
+//                Toast.makeText(this, "start uploading", Toast.LENGTH_LONG).show();
+                startUploadingVideoService(fileUri, audioRecordedFile.getPath(), fileType);
+            }
             //release exoplayer
             if (exoPlayerVideoManager != null) {
                 exoPlayerVideoManager.releasePlayer();
@@ -181,25 +198,88 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         reviewView.setVisibility(View.GONE);
         //show record button
         videoCaptureButton.setVisibility(View.VISIBLE);
+        deleteRecordedAudio();
         initializeCameraX();
     }
 
     @Override
     public void onCaptureImage(Uri imageUri) {
         fileUri = imageUri;
-        //show review view to accept or cancel video
-        reviewView.setVisibility(View.VISIBLE);
-        //hide record button
-        videoCaptureButton.setVisibility(View.GONE);
         //show image view
         imageView.setVisibility(View.VISIBLE);
         imageView.setImageURI(imageUri);
         previewView.setVisibility(View.GONE);
     }
 
-    private void startUploadingVideoService(Uri videoUri, String fileType) {
+    @Override
+    public void onStartRecordingAudio() {
+        //set button as stop recording
+        videoCaptureButton.setEnabled(true);
+        videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.stop_record));
+        //start recording audio
+        audioRecordedFile = new File(getFilesDir().getPath(), UUID.randomUUID().toString() + Constants.AUDIO_FILE_TYPE);
+        try {
+            audioRecorder.start(this, audioRecordedFile.getPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        recordedSecondsTV.setText("00:00");
+        updateEverySecRunnable = new Runnable() {
+            @Override
+            public void run() {
+                ++recordedSeconds;
+                String seconds = recordedSeconds < 10 ? "0" + recordedSeconds : recordedSeconds + "";
+                recordedSecondsTV.setText(String.format("00:%s", seconds));
+                //start recording question audio
+                handler.postDelayed(this, 1000);
+            }
+        };
+        handler.postDelayed(updateEverySecRunnable, 1000);
+    }
+
+    @Override
+    public void onStopRecordingAudio() {
+        handler.removeCallbacks(updateEverySecRunnable);
+        videoCaptureButton.setEnabled(true);
+        videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
+        //show review view to accept or cancel video
+        reviewView.setVisibility(View.VISIBLE);
+        //hide record button
+        videoCaptureButton.setVisibility(View.GONE);
+        //stop recorded audio
+        audioRecorder.stop();
+        //show exoplayer audio
+        previewView.setVisibility(View.GONE);
+        playerView.setVisibility(View.GONE);
+        imageView.setVisibility(View.VISIBLE);
+        //show image with audio
+        exoPlayerVideoManager = new ExoPlayerVideoManager();
+        exoPlayerVideoManager.initializeAudioExoPlayer(this, audioRecordedFile.getPath());
+        exoPlayerVideoManager.initializePlayer(playerView);
+        //set captured image to the exoplayer
+//        imageView.setVisibility(View.GONE);
+//        String path = audioRecordedFile.getPath();
+//        String aPath = audioRecordedFile.getAbsolutePath();
+//        String filesPath = getFilesDir().getPath();
+//        try {
+//            Bitmap bitmap = BitmapFactory.decodeFile(audioRecordedFile.getAbsolutePath());
+//            Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+//            exoPlayerVideoManager.setCapturedImageToPlayer(drawable);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+    }
+
+    private void deleteRecordedAudio() {
+        if (audioRecordedFile != null && audioRecordedFile.exists()) {
+            audioRecordedFile.delete();
+        }
+    }
+
+    private void startUploadingVideoService(Uri fileUri, String questionAudioUri, String fileType) {
         Intent uploadServiceIntent = new Intent(this, MyUploadService.class);
-        uploadServiceIntent.putExtra(MyUploadService.EXTRA_FILE_URI, videoUri);
+        uploadServiceIntent.putExtra(MyUploadService.EXTRA_FILE_URI, fileUri);
+        uploadServiceIntent.putExtra(MyUploadService.EXTRA_AUDIO_URI, questionAudioUri);
         uploadServiceIntent.putExtra(MyUploadService.FILE_TYPE, fileType);
         uploadServiceIntent.putExtra(MyUploadService.RECORD_TYPE, recordType);
         uploadServiceIntent.setAction(MyUploadService.ACTION_UPLOAD);

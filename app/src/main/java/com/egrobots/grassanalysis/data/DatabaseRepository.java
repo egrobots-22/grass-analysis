@@ -28,8 +28,8 @@ public class DatabaseRepository {
         return firebaseDataSource.uploadVideo(videoUri, fileType, deviceToken, username);
     }
 
-    public Flowable<UploadTask.TaskSnapshot> uploadVideoAsService(Uri videoUri, String fileType, String deviceToken, String username) {
-        return firebaseDataSource.uploadVideoAsService(videoUri, fileType, deviceToken, username);
+    public Flowable<UploadTask.TaskSnapshot> uploadVideoAsService(Uri videoUri, String fileType, String questionAudioUri, String deviceToken, String username) {
+        return firebaseDataSource.uploadVideoAsService(videoUri, fileType, questionAudioUri, deviceToken, username);
     }
 
     public Flowable<QuestionItem> getCurrentUserVideos(String deviceToken) {

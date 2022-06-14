@@ -51,15 +51,16 @@ public class FirebaseDataSource {
         this.firebaseDatabase = firebaseDatabase;
     }
 
-    private void saveVideoInfo(FlowableEmitter emitter, String videoUri, String deviceToken, String fileType, String username) {
+    private void saveVideoInfo(FlowableEmitter emitter, String videoUri, String questionUri, String deviceToken, String fileType, String username) {
         DatabaseReference videosRef = firebaseDatabase.getReference(Constants.QUESTIONS_NODE);
         QuestionItem questionItem = new QuestionItem();
-        questionItem.setVideoQuestionUri(videoUri);
+        questionItem.setQuestionMediaUri(videoUri);
         questionItem.setUsername(username);
         questionItem.setTimestamp(-System.currentTimeMillis());
         questionItem.setDeviceToken(deviceToken);
         questionItem.setIsJustUploaded(true);
         questionItem.setType(fileType);
+        questionItem.setQuestionAudioUri(questionUri);
         videosRef.push().setValue(questionItem).addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
                 emitter.onComplete();
@@ -85,26 +86,48 @@ public class FirebaseDataSource {
                 }
 
                 // Continue with the task to get the download URL
-                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, username, username));
+                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), null, deviceToken, username, username));
                 return reference.getDownloadUrl();
             });
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Flowable<UploadTask.TaskSnapshot> uploadVideoAsService(Uri videoUri, String fileType, String deviceToken, String username) {
+    public Flowable<UploadTask.TaskSnapshot> uploadVideoAsService(Uri fileUri, String fileType, String questionAudioUri, String deviceToken, String username) {
         return Flowable.create(emitter -> {
             final StorageReference reference = storageReference.child(Constants.STORAGE_REF + System.currentTimeMillis() + "." + fileType);
-            UploadTask uploadTask = reference.putFile(videoUri);
-            uploadTask.addOnProgressListener(snapshot -> {
+            UploadTask uploadFileTask = reference.putFile(fileUri);
+            uploadFileTask.addOnProgressListener(snapshot -> {
                 double progress = (100.0 * snapshot.getBytesTransferred() / snapshot.getTotalByteCount());
                 emitter.onNext(snapshot);
-            }).continueWithTask(task -> {
-                if (!task.isSuccessful()) {
-                    emitter.onError(task.getException());
-                    Log.e(TAG, "then: " + task.getException() );
+            }).continueWithTask(fileTask -> {
+                if (!fileTask.isSuccessful()) {
+                    emitter.onError(fileTask.getException());
+                    Log.e(TAG, "then: " + fileTask.getException());
                 }
-                // Continue with the task to get the download URL
-                reference.getDownloadUrl().addOnCompleteListener(task1 -> saveVideoInfo(emitter, task1.getResult().toString(), deviceToken, fileType, username));
+                // Continue with the fileTask to get the download URL
+                reference.getDownloadUrl().addOnCompleteListener(fileCompletedTask -> {
+                    if (questionAudioUri != null) {
+                        //so it's an image with audio, upload audio firstly before saving in the database
+                        StorageReference audioQuestionsRef = storageReference.child(Constants.STORAGE_REF + "Audio Questions/" + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
+                        Uri audioFile = Uri.fromFile(new File(questionAudioUri));
+                        UploadTask uploadAudioTask = audioQuestionsRef.putFile(audioFile);
+                        uploadAudioTask.continueWithTask(audioTask -> {
+                            if (!audioTask.isSuccessful()) {
+                                emitter.onError(audioTask.getException());
+                                Log.e(TAG, "then: " + fileTask.getException());
+                            }
+                            audioQuestionsRef.getDownloadUrl().addOnCompleteListener(audioCompletedTask -> {
+                                saveVideoInfo(emitter,
+                                        fileCompletedTask.getResult().toString(),
+                                        audioCompletedTask.getResult().toString(),
+                                        deviceToken, fileType, username);
+                            });
+                            return audioQuestionsRef.getDownloadUrl();
+                        });
+                    } else {
+                        saveVideoInfo(emitter, fileCompletedTask.getResult().toString(), null, deviceToken, fileType, username);
+                    }
+                });
                 return reference.getDownloadUrl();
             }).addOnFailureListener(e -> {
                 Log.i(TAG, "onFailure: " + e);

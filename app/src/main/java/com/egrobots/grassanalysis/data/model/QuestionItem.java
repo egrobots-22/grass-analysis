@@ -5,7 +5,8 @@ import java.util.List;
 public class QuestionItem {
     private String id;
     private String deviceToken;
-    private String videoQuestionUri;
+    private String questionMediaUri;
+    private String questionAudioUri;
     private String username;
     private List<String> audioAnswerUri;
     private long timestamp;
@@ -29,12 +30,20 @@ public class QuestionItem {
         this.deviceToken = deviceToken;
     }
 
-    public String getVideoQuestionUri() {
-        return videoQuestionUri;
+    public String getQuestionMediaUri() {
+        return questionMediaUri;
     }
 
-    public void setVideoQuestionUri(String videoQuestionUri) {
-        this.videoQuestionUri = videoQuestionUri;
+    public void setQuestionMediaUri(String questionMediaUri) {
+        this.questionMediaUri = questionMediaUri;
+    }
+
+    public String getQuestionAudioUri() {
+        return questionAudioUri;
+    }
+
+    public void setQuestionAudioUri(String questionAudioUri) {
+        this.questionAudioUri = questionAudioUri;
     }
 
     public String getUsername() {

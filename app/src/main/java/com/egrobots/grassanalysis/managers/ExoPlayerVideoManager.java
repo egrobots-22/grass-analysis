@@ -1,6 +1,7 @@
 package com.egrobots.grassanalysis.managers;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 
 import com.egrobots.grassanalysis.R;
@@ -8,6 +9,7 @@ import com.egrobots.grassanalysis.R;
 import java.io.File;
 import java.util.UUID;
 
+import androidx.core.content.ContextCompat;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
 import androidx.media3.common.VideoSize;
@@ -55,7 +57,20 @@ public class ExoPlayerVideoManager {
         }
     }
 
+    public void initializeAudioExoPlayer(Context context, String audioUri) {
+        this.context = context;
+        exoPlayer = new ExoPlayer.Builder(context).build();
+        MediaItem mediaItem = MediaItem.fromUri(audioUri);
+        exoPlayer.setMediaItem(mediaItem);
+        exoPlayer.setPlayWhenReady(playWhenReady);
+        exoPlayer.seekTo(currentItem, playbackPosition);
+        exoPlayer.setRepeatMode(Player.REPEAT_MODE_ONE);
+        exoPlayer.prepare();
+        exoPlayer.play();
+    }
+
     public void initializeExoPlayer(Context context, String videoUri) {
+        this.context = context;
         exoPlayer = new ExoPlayer.Builder(context).build();
         LeastRecentlyUsedCacheEvictor evictor = new LeastRecentlyUsedCacheEvictor(100 * 1024 * 1024);
         SimpleCache simpleCache = new SimpleCache(new File(context.getCacheDir(), UUID.randomUUID().toString())
@@ -121,6 +136,10 @@ public class ExoPlayerVideoManager {
         playerView.setPlayer(exoPlayer);
         playerView.hideController();
         this.playerView = playerView;
+    }
+
+    public void setCapturedImageToPlayer(Drawable image) {
+        playerView.setDefaultArtwork(ContextCompat.getDrawable(context, R.drawable.background));
     }
 
     public PlayerView getPlayerView() {

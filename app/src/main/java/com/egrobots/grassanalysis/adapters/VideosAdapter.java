@@ -1,7 +1,6 @@
 package com.egrobots.grassanalysis.adapters;
 
 import android.content.Context;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,14 +50,14 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         if (questionItem.getType() == null || questionItem.getType().contains("mp4")) {
             holder.playerView.setVisibility(View.VISIBLE);
             holder.imageView.setVisibility(View.GONE);
-            managers.get(position).initializePlayer(holder.playerView);
         } else {
             holder.playerView.setVisibility(View.GONE);
             holder.imageView.setVisibility(View.VISIBLE);
             Glide.with(holder.itemView.getContext())
-                    .load(questionItem.getVideoQuestionUri())
+                    .load(questionItem.getQuestionMediaUri())
                     .into(holder.imageView);
         }
+        managers.get(position).initializePlayer(holder.playerView);
 
         //get audio files for current video question
         holder.setRecordAudioView(questionItem);
@@ -75,11 +74,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         notifyItemInserted(0);
         if (questionItem.getType()== null || questionItem.getType().contains("mp4")) {
             ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
-//        ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
-            exoPlayerVideoManager.initializeExoPlayer(context, questionItem.getVideoQuestionUri());
+            exoPlayerVideoManager.initializeExoPlayer(context, questionItem.getQuestionMediaUri());
             managers.add(0, exoPlayerVideoManager);
         } else {
-            managers.add(null);
+            ExoPlayerVideoManager exoPlayerAudioManager = new ExoPlayerVideoManager();
+            exoPlayerAudioManager.initializeAudioExoPlayer(context, questionItem.getQuestionAudioUri());
+            managers.add(0, exoPlayerAudioManager);
         }
     }
 
@@ -88,11 +88,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         for (QuestionItem item : itemsList) {
             if (item.getType()== null || item.getType().contains("mp4")) {
                 ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
-//            ExoPlayer exoPlayer = new ExoPlayer.Builder(context).build();
-                exoPlayerVideoManager.initializeExoPlayer(context, item.getVideoQuestionUri());
+                exoPlayerVideoManager.initializeExoPlayer(context, item.getQuestionMediaUri());
                 managers.add(exoPlayerVideoManager);
             } else {
-                managers.add(null);
+                ExoPlayerVideoManager exoPlayerAudioManager = new ExoPlayerVideoManager();
+                exoPlayerAudioManager.initializeAudioExoPlayer(context, item.getQuestionAudioUri());
+                managers.add(exoPlayerAudioManager);
             }
         }
         notifyDataSetChanged();

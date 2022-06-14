@@ -45,6 +45,7 @@ public class CameraXRecorder {
     private CameraXCallback cameraXCallback;
     private ProcessCameraProvider cameraProvider;
     private ImageCapture imageCapture;
+    private boolean recordingAudio;
 
     public CameraXRecorder(Context context, PreviewView previewView, CameraXCallback cameraXCallback) {
         this.context = context;
@@ -92,6 +93,14 @@ public class CameraXRecorder {
 
     public void captureImage() {
         if (imageCapture != null) {
+            boolean isRecordingAudio = recordingAudio;
+            if (isRecordingAudio) {
+                //stop recording audio
+                cameraXCallback.onStopRecordingAudio();
+                recordingAudio = false;
+                cameraProvider.unbindAll();
+                return;
+            }
             long timestamp = System.currentTimeMillis();
             ContentValues contentValues = new ContentValues();
             contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, timestamp);
@@ -109,7 +118,9 @@ public class CameraXRecorder {
                         @Override
                         public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
                             Uri imageUri = outputFileResults.getSavedUri();
+                            recordingAudio = true;
                             cameraXCallback.onCaptureImage(imageUri);
+                            cameraXCallback.onStartRecordingAudio();
                         }
 
                         @Override
@@ -189,5 +200,9 @@ public class CameraXRecorder {
         void onError(String error);
 
         void onCaptureImage(Uri imageUri);
+
+        void onStartRecordingAudio();
+
+        void onStopRecordingAudio();
     }
 }
