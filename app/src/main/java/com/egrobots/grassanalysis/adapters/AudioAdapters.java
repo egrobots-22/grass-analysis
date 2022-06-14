@@ -4,6 +4,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.egrobots.grassanalysis.R;
@@ -29,12 +30,16 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewHolder> {
+
+    private AudioPlayer.AudioPlayCallback audioPlayCallback;
     private List<AudioAnswer> audioAnswers = new ArrayList<>();
     private DatabaseRepository databaseRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
+    private boolean isJustUploaded;
 
-    public AudioAdapters(DatabaseRepository databaseRepository) {
+    public AudioAdapters(DatabaseRepository databaseRepository, AudioPlayer.AudioPlayCallback audioPlayCallback) {
         this.databaseRepository = databaseRepository;
+        this.audioPlayCallback = audioPlayCallback;
     }
 
     @NonNull
@@ -49,9 +54,21 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(() -> {
             AudioAnswer audioAnswer = audioAnswers.get(position);
-            holder.audioNameTextView.setText(audioAnswer.getRecordedUser());
-            holder.audioLengthTextView.setText(audioAnswer.getAudioLength());
-            holder.setAudioUri(audioAnswer.getAudioUri().toString());
+            if (audioAnswer == null) {
+                holder.progressBar.setVisibility(View.VISIBLE);
+                holder.audioNameTextView.setVisibility(View.GONE);
+                holder.audioLengthTextView.setVisibility(View.GONE);
+                holder.playButton.setVisibility(View.GONE);
+                holder.pauseButton.setVisibility(View.GONE);
+            } else {
+                holder.progressBar.setVisibility(View.GONE);
+                holder.audioNameTextView.setVisibility(View.VISIBLE);
+                holder.audioLengthTextView.setVisibility(View.VISIBLE);
+                holder.playButton.setVisibility(View.VISIBLE);
+                holder.audioNameTextView.setText(audioAnswer.getRecordedUser());
+                holder.audioLengthTextView.setText(audioAnswer.getAudioLength());
+                holder.setAudioUri(audioAnswer.getAudioUri().toString());
+            }
             executorService.shutdown();
         });
     }
@@ -62,8 +79,18 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
     }
 
     public void addNewAudio(AudioAnswer audioAnswer) {
-        audioAnswers.add(0, audioAnswer);
-        notifyDataSetChanged();
+        if (audioAnswer == null) {
+            isJustUploaded = true;
+            audioAnswers.add(0, null);
+            notifyDataSetChanged();
+        } else if (isJustUploaded) {
+            isJustUploaded = false;
+            audioAnswers.set(0, audioAnswer);
+            notifyItemChanged(0);
+        } else {
+            audioAnswers.add(0, audioAnswer);
+            notifyDataSetChanged();
+        }
     }
 
     public void retrieveAudios(QuestionItem questionItem) {
@@ -94,7 +121,9 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
                 });
     }
 
-    static class AudioViewHolder extends RecyclerView.ViewHolder implements AudioPlayer.AudioPlayCallback {
+    class AudioViewHolder extends RecyclerView.ViewHolder implements AudioPlayer.AudioPlayCallback {
+        private AudioPlayer audioPlayer;
+
         @BindView(R.id.playButton)
         ImageButton playButton;
         @BindView(R.id.pauseButton)
@@ -103,7 +132,8 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         TextView audioNameTextView;
         @BindView(R.id.audio_length_textview)
         TextView audioLengthTextView;
-        private AudioPlayer audioPlayer;
+        @BindView(R.id.audio_progress_bar)
+        ProgressBar progressBar;
 
         public AudioViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -113,7 +143,6 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         private void setAudioUri(String audioUri) {
             audioPlayer = new AudioPlayer();
             audioPlayer.setAudio(audioUri, this);
-//            return audioPlayer.getAudioDuration();
         }
 
         @OnClick(R.id.pauseButton)
@@ -131,9 +160,15 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         }
 
         @Override
-        public void onComplete() {
+        public void onStartPlayingAnswerAudio() {
+            audioPlayCallback.onStartPlayingAnswerAudio();
+        }
+
+        @Override
+        public void onFinishPlayingAnswerAudio() {
             playButton.setVisibility(View.VISIBLE);
             pauseButton.setVisibility(View.GONE);
+            audioPlayCallback.onFinishPlayingAnswerAudio();
         }
     }
 }

@@ -19,6 +19,7 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.network.NetworkStateManager;
 import com.egrobots.grassanalysis.services.MyUploadService;
@@ -51,7 +52,7 @@ import static androidx.core.content.PermissionChecker.PERMISSION_GRANTED;
  * create an instance of this fragment.
  */
 public class SwipeableVideosFragment extends DaggerFragment
-        implements RecordAudioImpl.RecordAudioCallback, ExoPlayerVideoManager.VideoManagerCallback {
+        implements RecordAudioImpl.RecordAudioCallback, ExoPlayerVideoManager.VideoManagerCallback, AudioPlayer.AudioPlayCallback {
     private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
 
@@ -107,6 +108,7 @@ public class SwipeableVideosFragment extends DaggerFragment
 
         observeUploadingVideo();
         videosAdapter.setRecordAudioCallback(this);
+        videosAdapter.setAudioPlayCallback(this);
         viewPagerVideos.setAdapter(videosAdapter);
         viewPagerVideos.registerOnPageChangeCallback(new OnVideoChangeCallback());
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
@@ -204,9 +206,18 @@ public class SwipeableVideosFragment extends DaggerFragment
     /*
     recording audios
      */
+
+    @Override
+    public void onStartRecording() {
+        if (exoPlayerVideoManagerCur != null) {
+            exoPlayerVideoManagerCur.pausePlayer();
+        }
+    }
+
     @Override
     public void uploadRecordedAudio(AudioAnswer audioAnswer, QuestionItem questionItem) {
         if (networkState) {
+            videosAdapter.loadAddingNewAudioAnswer(questionItem.getId());
             swipeableVideosViewModel.uploadRecordedAudio(audioAnswer, questionItem);
         } else {
             Toast.makeText(getContext(),
@@ -219,9 +230,11 @@ public class SwipeableVideosFragment extends DaggerFragment
         swipeableVideosViewModel.observeUploadAudioState().observe(getViewLifecycleOwner(), stateResource -> {
             switch (stateResource.status) {
                 case SUCCESS:
-                    Toast.makeText(getContext(), R.string.recorded_audio_saved_successfully, Toast.LENGTH_SHORT).show();
+                    //set audio data
+//                    Toast.makeText(getContext(), R.string.recorded_audio_saved_successfully, Toast.LENGTH_SHORT).show();
                 case LOADING:
-                    Toast.makeText(getContext(), R.string.uploading_audio, Toast.LENGTH_SHORT).show();
+                    //add new audio to the audio adapter
+//                    Toast.makeText(getContext(), R.string.uploading_audio, Toast.LENGTH_SHORT).show();
                     break;
                 case ERROR:
                     Toast.makeText(getContext(), stateResource.message, Toast.LENGTH_SHORT).show();
@@ -318,6 +331,20 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Override
     public void onEnd() {
         viewPagerVideos.setCurrentItem(prevPosition + 1, true);
+    }
+
+    @Override
+    public void onFinishPlayingAnswerAudio() {
+//        if (exoPlayerVideoManagerCur != null) {
+//            exoPlayerVideoManagerCur.play();
+//        }
+    }
+
+    @Override
+    public void onStartPlayingAnswerAudio() {
+        if (exoPlayerVideoManagerCur != null) {
+            exoPlayerVideoManagerCur.pausePlayer();
+        }
     }
 
     class OnVideoChangeCallback extends ViewPager2.OnPageChangeCallback {

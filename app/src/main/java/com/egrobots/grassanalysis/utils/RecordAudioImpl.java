@@ -76,6 +76,7 @@ public class RecordAudioImpl {
                     Log.i("RecordAudioImpl:74", "recordFile: " + recordFile);
                     audioRecorder.start(context, recordFile.getPath());
                     isRecordStarted = true;
+                    recordAudioCallback.onStartRecording();
                 } else {
                     stopRecording(true);
                 }
@@ -143,6 +144,7 @@ public class RecordAudioImpl {
     }
 
     public interface RecordAudioCallback {
+        void onStartRecording();
         void requestAudioPermission(RecordView view);
         void uploadRecordedAudio(AudioAnswer recordFile, QuestionItem questionItem);
     }

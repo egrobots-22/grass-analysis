@@ -2,7 +2,6 @@ package com.egrobots.grassanalysis.managers;
 
 import android.media.AudioAttributes;
 import android.media.AudioManager;
-import android.media.MediaDataSource;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 
@@ -25,12 +24,12 @@ public class AudioPlayer {
                 .setLegacyStreamType(AudioManager.STREAM_MUSIC)
                 .build();
         mediaPlayer.setAudioAttributes(audioAttributes);
-        mediaPlayer.setOnCompletionListener(mp -> audioPlayCallback.onComplete());
+        mediaPlayer.setOnCompletionListener(mp -> audioPlayCallback.onFinishPlayingAnswerAudio());
         try {
             mediaPlayer.setDataSource(audioUri);
             mediaPlayer.prepare();
             mediaPlayer.start();
-
+            audioPlayCallback.onStartPlayingAnswerAudio();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -84,6 +83,8 @@ public class AudioPlayer {
     }
 
     public interface AudioPlayCallback {
-        void onComplete();
+        void onFinishPlayingAnswerAudio();
+
+        void onStartPlayingAnswerAudio();
     }
 }

@@ -18,12 +18,14 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,8 +41,10 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
 
     public List<QuestionItem> questionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
+    private AudioPlayer.AudioPlayCallback audioPlayCallback;
     private DatabaseRepository databaseRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();
+    private HashMap<String, AudioAdapters> audioAnswersForQuestionMap = new HashMap<>();
     ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public VideosAdapter(DatabaseRepository databaseRepository) {
@@ -135,6 +139,14 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         this.recordAudioCallback = recordAudioCallback;
     }
 
+    public void setAudioPlayCallback(AudioPlayer.AudioPlayCallback audioPlayCallback) {
+        this.audioPlayCallback = audioPlayCallback;
+    }
+
+    public void loadAddingNewAudioAnswer(String id) {
+        audioAnswersForQuestionMap.get(id).addNewAudio(null);
+    }
+
     class VideoViewHolder extends RecyclerView.ViewHolder {
 
         @BindView(R.id.record_view)
@@ -149,6 +161,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         PlayerView playerView;
         @BindView(R.id.imageView)
         ImageView imageView;
+        AudioAdapters audioAdapters;
 
         public VideoViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -161,10 +174,11 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         }
 
         private void setupAudioFilesRecyclerView(QuestionItem questionItem) {
-            AudioAdapters audioAdapters = new AudioAdapters(databaseRepository);
+            audioAdapters = new AudioAdapters(databaseRepository, audioPlayCallback);
             audioFilesRecyclerView.setAdapter(audioAdapters);
             audioFilesRecyclerView.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
             audioAdapters.retrieveAudios(questionItem);
+            audioAnswersForQuestionMap.put(questionItem.getId(), audioAdapters);
         }
     }
 

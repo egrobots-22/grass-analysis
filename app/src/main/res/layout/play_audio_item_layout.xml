@@ -28,6 +28,13 @@
             android:background="@null"
             android:src="@drawable/ic_action_pause"
             android:visibility="gone" />
+
+        <ProgressBar
+            android:id="@+id/audio_progress_bar"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:visibility="visible"/>
     </FrameLayout>
 
     <TextView
