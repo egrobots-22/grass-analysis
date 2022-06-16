@@ -1,7 +1,10 @@
 package com.egrobots.grassanalysis.presentation.videos;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -16,12 +19,20 @@ import com.google.android.material.tabs.TabLayoutMediator;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.app.ActivityCompat;
 import androidx.viewpager2.widget.ViewPager2;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
 
 public class VideosTabActivity extends DaggerAppCompatActivity {
+
+    private static final int REQUEST_CODE_PERMISSIONS = 1;
+
+    private static final String[] REQUIRED_PERMISSIONS = {Manifest.permission.CAMERA
+            , Manifest.permission.RECORD_AUDIO
+            , Manifest.permission.WRITE_EXTERNAL_STORAGE
+            , Manifest.permission.READ_EXTERNAL_STORAGE};
 
     private ActivityResultLauncher<String> openGalleryLauncher;
 
@@ -30,8 +41,22 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_videos_tab);
         ButterKnife.bind(this);
+        if (!allPermissionsGranted()) {
+            ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
+        }
         initView();
         registerForActivityResult();
+    }
+
+    private boolean allPermissionsGranted() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && REQUIRED_PERMISSIONS != null) {
+            for (String permission : REQUIRED_PERMISSIONS) {
+                if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private void registerForActivityResult() {
