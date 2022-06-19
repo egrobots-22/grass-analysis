@@ -1,11 +1,13 @@
 package com.egrobots.grassanalysis.adapters;
 
-import android.media.MediaPlayer;
+import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.egrobots.grassanalysis.R;
@@ -13,6 +15,7 @@ import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
+import com.egrobots.grassanalysis.utils.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +34,8 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewHolder> {
+
+    public static final int TIME_UNIT = 500;
 
     private AudioPlayer.AudioPlayCallback audioPlayCallback;
     private List<AudioAnswer> audioAnswers = new ArrayList<>();
@@ -67,8 +72,9 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
                 holder.audioLengthTextView.setVisibility(View.VISIBLE);
                 holder.playButton.setVisibility(View.VISIBLE);
                 holder.audioNameTextView.setText(audioAnswer.getRecordedUser());
-                holder.audioLengthTextView.setText(audioAnswer.getAudioLength());
-                holder.setAudioUri(audioAnswer.getAudioUri().toString());
+                holder.audioLengthTextView.setText(audioAnswer.getAudioLengthAsString());
+                holder.setAudioUri(audioAnswer.getId(), audioAnswer.getAudioUri());
+                holder.seekBar.setMax(audioAnswer.getAudioLength()/TIME_UNIT);
             }
             executorService.shutdown();
         });
@@ -135,15 +141,36 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         TextView audioLengthTextView;
         @BindView(R.id.audio_progress_bar)
         ProgressBar progressBar;
+        @BindView(R.id.seek_bar)
+        SeekBar seekBar;
+        @BindView(R.id.audio_progress_textview)
+        TextView audioProgressTextView;
+
+        private Handler handler = new Handler();
+        private Runnable mUpdateTimeTask;
 
         public AudioViewHolder(@NonNull View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
+            mUpdateTimeTask = new Runnable() {
+                @Override
+                public void run() {
+                    if (audioPlayer != null) {
+                        audioProgressTextView.setText(Utils.formatMilliSeconds(audioPlayer.getCurrentPosition()));
+                        seekBar.setProgress(audioPlayer.getCurrentPosition() / TIME_UNIT);
+                        handler.postDelayed(this, TIME_UNIT);
+                    }
+                }
+            };
         }
 
-        private void setAudioUri(String audioUri) {
+        private void setAudioUri(String id, String audioUri) {
             audioPlayer = new AudioPlayer();
-            audioPlayer.setAudio(audioUri, this);
+            audioPlayer.setAudio(id, audioUri, this);
+        }
+
+        private void updateSeekBar() {
+            handler.postDelayed(mUpdateTimeTask, TIME_UNIT);
         }
 
         @OnClick(R.id.pauseButton)
@@ -151,6 +178,8 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             playButton.setVisibility(View.VISIBLE);
             pauseButton.setVisibility(View.GONE);
             audioPlayer.stopAudio();
+            seekBar.setProgress(0);
+            handler.removeCallbacks(mUpdateTimeTask);
         }
 
         @OnClick(R.id.playButton)
@@ -158,6 +187,8 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             pauseButton.setVisibility(View.VISIBLE);
             playButton.setVisibility(View.GONE);
             audioPlayer.playAudio();
+            audioProgressTextView.setText(Utils.formatMilliSeconds(audioPlayer.getCurrentPosition()));
+            updateSeekBar();
         }
 
         @Override
@@ -169,6 +200,9 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         public void onFinishPlayingAnswerAudio() {
             playButton.setVisibility(View.VISIBLE);
             pauseButton.setVisibility(View.GONE);
+            seekBar.setProgress(0);
+            handler.removeCallbacks(mUpdateTimeTask);
+            audioProgressTextView.setText("00:00");
             audioPlayCallback.onFinishPlayingAnswerAudio();
         }
     }

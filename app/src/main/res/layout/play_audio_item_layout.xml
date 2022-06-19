@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     android:background="@android:color/transparent"
-    android:orientation="horizontal"
-    android:weightSum="10">
+    android:orientation="horizontal">
+
+<!--    <FrameLayout-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_weight="1"-->
+<!--        android:layout_gravity="center">-->
 
     <FrameLayout
-        android:layout_width="0dp"
+        android:id="@+id/controllers_layout"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_gravity="center">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/playButton"
@@ -23,8 +30,8 @@
 
         <ImageButton
             android:id="@+id/pauseButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="@null"
             android:src="@drawable/ic_action_pause"
             android:visibility="gone" />
@@ -34,25 +41,66 @@
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:layout_gravity="center"
-            android:visibility="visible"/>
+            android:visibility="visible" />
+
     </FrameLayout>
+
+<!--    </FrameLayout>-->
+
+<!--    <LinearLayout-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_weight="4"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="center"-->
+<!--        android:orientation="vertical">-->
+
+    <SeekBar
+        android:id="@+id/seek_bar"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:progressBackgroundTint="@color/dark_gray"
+        app:layout_constraintBottom_toBottomOf="@id/controllers_layout"
+        app:layout_constraintStart_toEndOf="@id/controllers_layout"
+        app:layout_constraintTop_toTopOf="@id/controllers_layout" />
 
     <TextView
         android:id="@+id/audioNameTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:gravity="bottom"
+        android:text="User: lskj37hksjd"
+        android:textColor="@color/white"
+        android:textSize="8sp"
+        app:layout_constraintStart_toStartOf="@id/seek_bar"
+        app:layout_constraintTop_toBottomOf="@id/seek_bar" />
+
+    <!--    </LinearLayout>-->
+
+    <TextView
+        android:id="@+id/audio_progress_textview"
         android:layout_width="0dp"
-        android:layout_weight="4"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:padding="8dp"
+        android:layout_weight="1"
+        android:text="00:00"
         android:textColor="@color/white"
-        android:textSize="14sp" />
+        app:layout_constraintBottom_toBottomOf="@id/seek_bar"
+        app:layout_constraintStart_toEndOf="@id/seek_bar"
+        app:layout_constraintTop_toTopOf="@id/seek_bar" />
 
     <TextView
         android:id="@+id/audio_length_textview"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_weight="2"
-        android:textColor="@color/white" />
+        android:layout_marginStart="8dp"
+        android:layout_weight="1"
+        android:text="00:05"
+        android:textColor="@color/white"
+        app:layout_constraintBottom_toBottomOf="@id/seek_bar"
+        app:layout_constraintStart_toEndOf="@id/audio_progress_textview"
+        app:layout_constraintTop_toTopOf="@id/seek_bar" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -11,9 +11,11 @@ import java.util.HashMap;
 public class AudioPlayer {
     private MediaPlayer mediaPlayer;
     private String audioUri;
+    private String id;
     private AudioPlayCallback audioPlayCallback;
 
-    public void setAudio(String audioUri, AudioPlayCallback audioPlayCallback) {
+    public void setAudio(String id, String audioUri, AudioPlayCallback audioPlayCallback) {
+        this.id = id;
         this.audioUri = audioUri;
         this.audioPlayCallback = audioPlayCallback;
     }
@@ -35,6 +37,16 @@ public class AudioPlayer {
         }
     }
 
+    public int getCurrentPosition() {
+        return mediaPlayer.getCurrentPosition();
+    }
+
+    public void pauseAudio() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+        }
+    }
+
     public void stopAudio() {
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
@@ -43,6 +55,10 @@ public class AudioPlayer {
             audioPlayCallback.onFinishPlayingAnswerAudio();
             mediaPlayer = null;
         }
+    }
+
+    public String getAnswerAudioId() {
+        return id;
     }
 
     public String getAudioDuration() {

@@ -27,40 +27,39 @@
 
         <ImageButton
             android:id="@+id/record_new_video"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_below="@id/tabs"
             android:layout_alignParentEnd="true"
-            android:layout_margin="8dp"
+            android:layout_margin="16dp"
             android:background="@null"
             android:elevation="8dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_record_video" />
+            android:src="@drawable/video_icon_white2" />
 
         <ImageButton
             android:id="@+id/capture_new_image"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_below="@id/record_new_video"
             android:layout_alignParentEnd="true"
-            android:layout_margin="8dp"
+            android:layout_margin="16dp"
             android:background="@null"
             android:elevation="8dp"
-            android:tint="@android:color/holo_orange_light"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_capture_image" />
+            android:src="@drawable/capture_image_white" />
 
         <ImageButton
             android:id="@+id/open_gallery"
-            android:layout_width="60dp"
-            android:layout_height="60dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_below="@id/capture_new_image"
             android:layout_alignParentEnd="true"
-            android:layout_margin="8dp"
+            android:layout_margin="16dp"
             android:background="@null"
             android:elevation="8dp"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_open_gallery" />
+            android:src="@drawable/gallery_white_jpg" />
 
     </RelativeLayout>
 

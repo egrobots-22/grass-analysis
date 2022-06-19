@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.network.NetworkStateManager;
 import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.OnSwipeTouchListener;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
@@ -81,6 +83,7 @@ public class SwipeableVideosFragment extends DaggerFragment
     private QuestionItem latestVideoItem;
     private Boolean networkState = null;
     private AudioPlayer audioPlayer;
+    private String currentPlayingAnswerId;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -170,7 +173,8 @@ public class SwipeableVideosFragment extends DaggerFragment
             } else {
                 showEmptyView(false);
                 if (videoItems.size() == 0) {
-                    Toast.makeText(getContext(), R.string.no_more_videos, Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(getContext(), R.string.no_more_videos, Toast.LENGTH_SHORT).show();
+                    Log.i(TAG, "no more videos");
                 } else if (videoItems.size() == 1 &&
                         videoItems.get(0).getFlag() != null &&
                         videoItems.get(0).getFlag().equals(Constants.LATEST)) {
@@ -344,9 +348,14 @@ public class SwipeableVideosFragment extends DaggerFragment
 
     @Override
     public void onStartPlayingAnswerAudio(AudioPlayer audioPlayer) {
+        if (this.audioPlayer != null && !currentPlayingAnswerId.equals(audioPlayer.getAnswerAudioId())) {
+            this.audioPlayer.stopAudio();
+        }
         this.audioPlayer = audioPlayer;
+        currentPlayingAnswerId = audioPlayer.getAnswerAudioId();
         if (exoPlayerVideoManagerCur != null) {
             exoPlayerVideoManagerCur.pausePlayer();
+            exoPlayerVideoManagerCur.getPlayerView().hideController();
         }
     }
 
