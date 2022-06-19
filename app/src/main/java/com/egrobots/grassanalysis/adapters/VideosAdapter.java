@@ -16,14 +16,15 @@ import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
+import com.egrobots.grassanalysis.utils.SwipeLayoutToHideAndShow;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -37,8 +38,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     private AudioPlayer.AudioPlayCallback audioPlayCallback;
     private DatabaseRepository databaseRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();
-    private HashMap<String, AudioAdapters> audioAnswersForQuestionMap = new HashMap<>();
-    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private HashMap<String, AudioAdapters> audioAnswersAdaptersForQuestionMap = new HashMap<>();
+    private HashMap<Integer, RecyclerView> audioAnswersRecyclerForQuestionMap = new HashMap<>();
 
     public VideosAdapter(DatabaseRepository databaseRepository) {
         this.databaseRepository = databaseRepository;
@@ -67,6 +68,12 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         //get audio files for current video question
         holder.setRecordAudioView(questionItem);
         holder.setupAudioFilesRecyclerView(questionItem);
+
+        SwipeLayoutToHideAndShow swipeLayout = new SwipeLayoutToHideAndShow();
+        swipeLayout.initialize(holder.audiosLayout,
+                        holder.audioFilesRecyclerView,
+                        Arrays.asList(SwipeLayoutToHideAndShow.SwipeDirection.leftToRight,
+                        SwipeLayoutToHideAndShow.SwipeDirection.rightToLeft));
     }
 
     @Override
@@ -77,7 +84,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public void addNewVideo(Context context, QuestionItem questionItem) {
         questionItems.add(0, questionItem);
         notifyItemInserted(0);
-        if (questionItem.getType()== null || questionItem.getType().contains("mp4")) {
+        if (questionItem.getType() == null || questionItem.getType().contains("mp4")) {
             ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
             exoPlayerVideoManager.initializeExoPlayer(context, questionItem.getQuestionMediaUri());
             managers.add(0, exoPlayerVideoManager);
@@ -91,7 +98,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public void addAll(Context context, List<QuestionItem> itemsList) {
         questionItems.addAll(itemsList);
         for (QuestionItem item : itemsList) {
-            if (item.getType()== null || item.getType().contains("mp4")) {
+            if (item.getType() == null || item.getType().contains("mp4")) {
                 ExoPlayerVideoManager exoPlayerVideoManager = new ExoPlayerVideoManager();
                 exoPlayerVideoManager.initializeExoPlayer(context, item.getQuestionMediaUri());
                 managers.add(exoPlayerVideoManager);
@@ -121,11 +128,17 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     }
 
     public void loadAddingNewAudioAnswer(String id) {
-        audioAnswersForQuestionMap.get(id).addNewAudio(null);
+        audioAnswersAdaptersForQuestionMap.get(id).addNewAudio(null);
+    }
+
+    public RecyclerView getAudioAnswersRecyclerViewForQuestion(int position) {
+        return audioAnswersRecyclerForQuestionMap.get(position);
     }
 
     class VideoViewHolder extends RecyclerView.ViewHolder {
 
+        @BindView(R.id.audiosLayout)
+        ConstraintLayout audiosLayout;
         @BindView(R.id.record_view)
         RecordView recordView;
         @BindView(R.id.record_button)
@@ -155,7 +168,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             audioFilesRecyclerView.setAdapter(audioAdapters);
             audioFilesRecyclerView.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
             audioAdapters.retrieveAudios(questionItem);
-            audioAnswersForQuestionMap.put(questionItem.getId(), audioAdapters);
+            audioAnswersAdaptersForQuestionMap.put(questionItem.getId(), audioAdapters);
+            audioAnswersRecyclerForQuestionMap.put(getAbsoluteAdapterPosition(), audioFilesRecyclerView);
         }
     }
 

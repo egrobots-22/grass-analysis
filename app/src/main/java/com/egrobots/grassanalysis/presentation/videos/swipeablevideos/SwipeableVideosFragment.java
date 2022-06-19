@@ -388,6 +388,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                             , Toast.LENGTH_SHORT).show();
                 }
             }
+            videosAdapter.getAudioAnswersRecyclerViewForQuestion(position).setVisibility(View.VISIBLE);
             prevPosition = position;
         }
     }
