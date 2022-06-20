@@ -21,4 +21,6 @@ public class Constants {
     public static final String RECORD_TYPE = "record_type";
     public static final String CAPTURE_IMAGE = "capture_image";
     public static final String SELECTED_IMAGE_VIDEO = "selected_image_video";
+    public static final int MAX_VID_DURATION_SEC = 30;
+    public static final String VIDEO_LENGTH = "video_length";
 }

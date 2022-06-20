@@ -19,7 +19,8 @@
             android:theme="@style/FullScreen" />
         <activity
             android:name=".presentation.recordscreen.RecordScreenActivity2"
-            android:screenOrientation="portrait" />
+            android:screenOrientation="portrait"
+            android:theme="@style/TransparentScreenBar"/>
         <activity android:name=".presentation.recordscreen.RecordScreenActivity" />
         <activity
             android:name=".presentation.start.StartActivity"

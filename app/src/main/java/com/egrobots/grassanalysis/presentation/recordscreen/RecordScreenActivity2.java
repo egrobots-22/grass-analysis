@@ -47,7 +47,6 @@ import dagger.android.support.DaggerAppCompatActivity;
 public class RecordScreenActivity2 extends DaggerAppCompatActivity implements CameraXRecorder.CameraXCallback {
 
     private static final int REQUEST_CODE_PERMISSIONS = 1;
-    private static final int MAX_VID_DURATION = 30;
     private static final String[] REQUIRED_PERMISSIONS = {Manifest.permission.CAMERA
             , Manifest.permission.RECORD_AUDIO
             , Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -80,6 +79,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private QuestionItem.RecordType recordType;
     private AudioRecorder audioRecorder = new AudioRecorder();
     private File audioRecordedFile;
+    private boolean isAudioRecordingStarted;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -96,9 +96,12 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
             } else {
                 if (recordType == QuestionItem.RecordType.VIDEO) {
                     showRecordedVideo(fileUri);
+                    //show length of selected video
+                    long videoLength = getIntent().getLongExtra(Constants.VIDEO_LENGTH, 0);
+                    recordedSecondsTV.setVisibility(View.VISIBLE);
+                    recordedSecondsTV.setText(Utils.formatMilliSeconds(videoLength));
                 } else if (recordType == QuestionItem.RecordType.IMAGE) {
                     onCaptureImage(fileUri);
-                    onStartRecordingAudio();
                 }
             }
         }
@@ -120,13 +123,26 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         if (cameraXRecorder == null) {
             //file is selected, in this case, recording button will be shown only when selecting image to record the audio
             //so here we'll stop recording audio
-            onStopRecordingAudio();
+            if (!isAudioRecordingStarted) {
+                onStartRecordingAudio();
+            } else {
+                onStopRecordingAudio();
+            }
         } else {
             //file is recorded
             if (recordType == QuestionItem.RecordType.VIDEO) {
                 cameraXRecorder.recordVideo();
             } else {
-                cameraXRecorder.captureImage();
+                if (fileUri == null) {
+                    //no image captured yet
+                    cameraXRecorder.captureImage();
+                } else if (!isAudioRecordingStarted) {
+                    //recording audio is not started yet, so start it
+                    onStartRecordingAudio();
+                } else {
+                    //recording audio is started, so stop it by captureImage method to unbind camera provider
+                    cameraXRecorder.captureImage();
+                }
             }
         }
     }
@@ -147,7 +163,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
                 ++recordedSeconds;
                 String seconds = recordedSeconds < 10 ? "0" + recordedSeconds : recordedSeconds + "";
                 recordedSecondsTV.setText(String.format("00:%s", seconds));
-                if (recordedSeconds == MAX_VID_DURATION) {
+                if (recordedSeconds == Constants.MAX_VID_DURATION_SEC) {
                     cameraXRecorder.stopRecording();
                     handler.removeCallbacks(this);
                     Toast.makeText(RecordScreenActivity2.this, R.string.max_video_duarion_exceed, Toast.LENGTH_SHORT).show();
@@ -216,7 +232,14 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         //show record button
         videoCaptureButton.setVisibility(View.VISIBLE);
         deleteRecordedAudio();
-        initializeCameraX();
+        fileUri = null;
+        if (cameraXRecorder == null) {
+            //finish activity
+            finish();
+        } else {
+            //reinitialize camera
+            initializeCameraX();
+        }
     }
 
     @Override
@@ -226,10 +249,13 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         imageView.setVisibility(View.VISIBLE);
         imageView.setImageURI(imageUri);
         previewView.setVisibility(View.GONE);
+        videoCaptureButton.setEnabled(true);
+        videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.recording_audio));
     }
 
     @Override
     public void onStartRecordingAudio() {
+        isAudioRecordingStarted = true;
         //set button as stop recording
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.stop_record));
@@ -256,6 +282,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @Override
     public void onStopRecordingAudio() {
+        isAudioRecordingStarted = false;
         handler.removeCallbacks(updateEverySecRunnable);
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));

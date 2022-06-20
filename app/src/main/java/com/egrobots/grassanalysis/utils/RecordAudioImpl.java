@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import androidx.core.content.ContextCompat;
+
 public class RecordAudioImpl {
     private static final String FILE_TYPE = ".mp3";
 
@@ -50,6 +52,7 @@ public class RecordAudioImpl {
         recordButton.setRecordView(recordView);
 //        recordButton.setListenForRecord(false);
         recordButton.setListenForRecord(true);
+        recordButton.setColorFilter(R.color.dark_gray);
     }
 
     private void setupRecordView() {
@@ -71,9 +74,9 @@ public class RecordAudioImpl {
         @Override
         public void onStart() {
             try {
+                recordView.setBackground(ContextCompat.getDrawable(context, R.drawable.record_view_bg));
                 if (!isRecordStarted) {
                     recordFile = new File(context.getExternalFilesDir(null), UUID.randomUUID().toString() + Constants.AUDIO_FILE_TYPE);
-                    Log.i("RecordAudioImpl:74", "recordFile: " + recordFile);
                     audioRecorder.start(context, recordFile.getPath());
                     isRecordStarted = true;
                     recordAudioCallback.onStartRecording();
@@ -89,12 +92,14 @@ public class RecordAudioImpl {
         public void onCancel() {
             isRecordStarted = false;
             stopRecording(true);
+            recordView.setBackground(null);
         }
 
         @Override
         public void onFinish(long recordTime, boolean limitReached) {
             isRecordStarted = false;
             stopRecording(false);
+            recordView.setBackground(null);
             AudioAnswer audioAnswer = new AudioAnswer();
             audioAnswer.setAudioUri(recordFile.getPath());
             audioAnswer.setAudioLength(recordTime);

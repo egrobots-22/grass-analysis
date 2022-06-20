@@ -3,6 +3,7 @@ package com.egrobots.grassanalysis.presentation.videos;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -16,7 +17,8 @@ import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
-import androidx.activity.result.ActivityResultCallback;
+import java.util.concurrent.TimeUnit;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
@@ -68,6 +70,13 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
                         Intent intent = new Intent(this, RecordScreenActivity2.class);
                         if (type.contains("video")) {
                             intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.VIDEO);
+                            //get video length
+                            long videoLength = getVideoLength(fileUri);
+                            intent.putExtra(Constants.VIDEO_LENGTH, videoLength);
+                            if (videoLength > TimeUnit.SECONDS.toMillis(Constants.MAX_VID_DURATION_SEC)) {
+                                Toast.makeText(VideosTabActivity.this, R.string.cant_upload_video_max_cause, Toast.LENGTH_LONG).show();
+                                return;
+                            }
                         } else if (type.contains("image")) {
                             intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.IMAGE);
                         } else {
@@ -78,6 +87,15 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
                         startActivity(intent);
                     }
                 });
+    }
+
+    private long getVideoLength(Uri fileUri) {
+        MediaMetadataRetriever retriever = new MediaMetadataRetriever();
+        retriever.setDataSource(this, fileUri);
+        String time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+        long timeInMilliSec = Long.parseLong(time);
+        retriever.release();
+        return timeInMilliSec;
     }
 
     private void initView() {

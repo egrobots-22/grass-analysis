@@ -29,6 +29,9 @@
     <string name="uploading_audio">جاري تحميل التسجيل</string>
     <string name="no_more_videos">لا يوجد فيديوهات أخرى</string>
     <string name="max_video_duarion_exceed">المدة القصوي للفيديو 30 ثانية</string>
-    <string name="uploaded_done_successfully">تم تحميل الفيديو بنجاح</string>\
+    <string name="uploaded_done_successfully">تم تحميل الفيديو بنجاح</string>
+    <string name="start_adding_your_first_question">ابدأ بإضافة سؤالك الأول</string>
+    <string name="cant_upload_video_max_cause">لا يمكنك تحميل هذا الفيديو .. أقصي مدة 30 ثانية</string>
+    \
 
 </resources>

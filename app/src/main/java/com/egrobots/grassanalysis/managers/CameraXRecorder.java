@@ -120,7 +120,7 @@ public class CameraXRecorder {
                             Uri imageUri = outputFileResults.getSavedUri();
                             recordingAudio = true;
                             cameraXCallback.onCaptureImage(imageUri);
-                            cameraXCallback.onStartRecordingAudio();
+//                            cameraXCallback.onStartRecordingAudio();
                         }
 
                         @Override
