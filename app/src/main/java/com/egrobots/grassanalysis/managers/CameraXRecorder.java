@@ -9,10 +9,18 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.widget.Toast;
 
+import com.arthenica.mobileffmpeg.Config;
+import com.arthenica.mobileffmpeg.FFmpeg;
+import com.egrobots.grassanalysis.R;
+import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.Utils;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
@@ -32,8 +40,12 @@ import androidx.camera.video.VideoCapture;
 import androidx.camera.video.VideoRecordEvent;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.content.PermissionChecker;
 import androidx.lifecycle.LifecycleOwner;
+
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL;
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 
 public class CameraXRecorder {
 
@@ -119,7 +131,7 @@ public class CameraXRecorder {
                         public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
                             Uri imageUri = outputFileResults.getSavedUri();
                             recordingAudio = true;
-                            cameraXCallback.onCaptureImage(imageUri);
+                            cameraXCallback.onCaptureImage(imageUri, false);
 //                            cameraXCallback.onStartRecordingAudio();
                         }
 
@@ -199,7 +211,7 @@ public class CameraXRecorder {
 
         void onError(String error);
 
-        void onCaptureImage(Uri imageUri);
+        void onCaptureImage(Uri imageUri, boolean multipleImages);
 
         void onStartRecordingAudio();
 

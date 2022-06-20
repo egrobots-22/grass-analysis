@@ -97,6 +97,7 @@ public class QuestionItem {
 
     public enum RecordType {
         VIDEO,
-        IMAGE;
+        IMAGE,
+        MUTLIPLE_IMAGES;
     }
 }

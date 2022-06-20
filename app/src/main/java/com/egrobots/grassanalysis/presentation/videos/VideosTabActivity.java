@@ -1,12 +1,15 @@
 package com.egrobots.grassanalysis.presentation.videos;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.egrobots.grassanalysis.R;
@@ -17,6 +20,7 @@ import com.egrobots.grassanalysis.utils.Constants;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -36,7 +40,7 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
             , Manifest.permission.WRITE_EXTERNAL_STORAGE
             , Manifest.permission.READ_EXTERNAL_STORAGE};
 
-    private ActivityResultLauncher<String> openGalleryLauncher;
+    private ActivityResultLauncher openGalleryLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,28 +67,50 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
 
     private void registerForActivityResult() {
         openGalleryLauncher = registerForActivityResult(
-                new ActivityResultContracts.GetContent(),
-                fileUri -> {
-                    if (fileUri != null) {
-                        String type = getContentResolver().getType(fileUri);
-                        Intent intent = new Intent(this, RecordScreenActivity2.class);
-                        if (type.contains("video")) {
-                            intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.VIDEO);
-                            //get video length
-                            long videoLength = getVideoLength(fileUri);
-                            intent.putExtra(Constants.VIDEO_LENGTH, videoLength);
-                            if (videoLength > TimeUnit.SECONDS.toMillis(Constants.MAX_VID_DURATION_SEC)) {
-                                Toast.makeText(VideosTabActivity.this, R.string.cant_upload_video_max_cause, Toast.LENGTH_LONG).show();
-                                return;
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK){
+                        Intent questionIntent = new Intent(this, RecordScreenActivity2.class);
+                        Intent data = result.getData();
+                        if (data != null && data.getClipData() != null) {
+                            //if multiple images are selected
+                            ArrayList<Uri> selectedUris = new ArrayList<>();
+                            for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+                                Uri imageUri = data.getClipData().getItemAt(i).getUri();
+                                //check type of selected item, send error message if video is selected with image
+                                if (getContentResolver().getType(imageUri).contains("video")) {
+                                    Toast.makeText(VideosTabActivity.this, "لا يمكنك تحميل فيديو مع صورة أو أكثر من فيديو", Toast.LENGTH_LONG).show();
+                                    return;
+                                }
+                                selectedUris.add(imageUri);
                             }
-                        } else if (type.contains("image")) {
-                            intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.IMAGE);
-                        } else {
-                            Toast.makeText(VideosTabActivity.this, "Not supported file", Toast.LENGTH_SHORT).show();
-                            return;
+                            questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.MUTLIPLE_IMAGES);
+                            questionIntent.putParcelableArrayListExtra(Constants.SELECTED_MULTIPLE_IMAGES, selectedUris);
+                            startActivity(questionIntent);
+                        } else if (data.getData() != null) {
+                            //if single image is selected
+                            Uri fileUri = data.getData();
+                            if (fileUri != null) {
+                                String type = getContentResolver().getType(fileUri);
+                                if (type.contains("video")) {
+                                    questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.VIDEO);
+                                    //get video length
+                                    long videoLength = getVideoLength(fileUri);
+                                    questionIntent.putExtra(Constants.VIDEO_LENGTH, videoLength);
+                                    if (videoLength > TimeUnit.SECONDS.toMillis(Constants.MAX_VID_DURATION_SEC)) {
+                                        Toast.makeText(VideosTabActivity.this, R.string.cant_upload_video_max_cause, Toast.LENGTH_LONG).show();
+                                        return;
+                                    }
+                                } else if (type.contains("image")) {
+                                    questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.IMAGE);
+                                } else {
+                                    Toast.makeText(VideosTabActivity.this, "Not supported file", Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                questionIntent.putExtra(Constants.SELECTED_IMAGE_VIDEO, fileUri);
+                                startActivity(questionIntent);
+                            }
                         }
-                        intent.putExtra(Constants.SELECTED_IMAGE_VIDEO, fileUri);
-                        startActivity(intent);
                     }
                 });
     }
@@ -131,9 +157,11 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
     @OnClick(R.id.open_gallery)
     public void onOpenGalleryClicked() {
         Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-        photoPickerIntent.setType("*/*");
+        photoPickerIntent.setType("image/*");
         photoPickerIntent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
-        openGalleryLauncher.launch("*/*");
+        photoPickerIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        photoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
+        openGalleryLauncher.launch(photoPickerIntent);
     }
 
 }

@@ -11,12 +11,21 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageSwitcher;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewSwitcher;
 
+import com.arthenica.mobileffmpeg.Config;
+import com.arthenica.mobileffmpeg.FFmpeg;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.AudioRecorder;
@@ -30,6 +39,7 @@ import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -43,6 +53,9 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
+
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL;
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 
 public class RecordScreenActivity2 extends DaggerAppCompatActivity implements CameraXRecorder.CameraXCallback {
 
@@ -70,16 +83,27 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     PlayerView playerView;
     @BindView(R.id.imageView)
     ImageView imageView;
+    @BindView(R.id.multiple_images_view)
+    View multipleImagesView;
+    @BindView(R.id.image_switcher)
+    ImageSwitcher imageSwitcher;
+    @BindView(R.id.prevImageButton)
+    ImageButton prevImageButton;
+    @BindView(R.id.nextImageButton)
+    ImageButton nextImageButton;
+
     private CameraXRecorder cameraXRecorder;
     private int recordedSeconds;
     private Handler handler = new Handler();
     private Runnable updateEverySecRunnable;
     private Uri fileUri;
+    private List<Uri> imagesUris;
     private ExoPlayerVideoManager exoPlayerManager;
     private QuestionItem.RecordType recordType;
     private AudioRecorder audioRecorder = new AudioRecorder();
     private File audioRecordedFile;
     private boolean isAudioRecordingStarted;
+    private int selectedImagePosition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,20 +115,68 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         if (getIntent() != null) {
             recordType = (QuestionItem.RecordType) getIntent().getExtras().get(Constants.RECORD_TYPE);
             fileUri = getIntent().getParcelableExtra(Constants.SELECTED_IMAGE_VIDEO);
-            if (fileUri == null) {
+            imagesUris = getIntent().getParcelableArrayListExtra(Constants.SELECTED_MULTIPLE_IMAGES);
+
+            if (fileUri == null && imagesUris == null) {
+                //no selected files, so we'll record images or videos
                 initializeCameraX();
             } else {
+                //there are selected files
                 if (recordType == QuestionItem.RecordType.VIDEO) {
-                    showRecordedVideo(fileUri);
-                    //show length of selected video
-                    long videoLength = getIntent().getLongExtra(Constants.VIDEO_LENGTH, 0);
-                    recordedSecondsTV.setVisibility(View.VISIBLE);
-                    recordedSecondsTV.setText(Utils.formatMilliSeconds(videoLength));
+                    initializeSelectedVideoType();
                 } else if (recordType == QuestionItem.RecordType.IMAGE) {
-                    onCaptureImage(fileUri);
+                    onCaptureImage(fileUri, false);
+                } else if (recordType == QuestionItem.RecordType.MUTLIPLE_IMAGES) {
+                    initializeSelectedMultipleImagesType();
                 }
             }
         }
+    }
+    private void initializeSelectedVideoType() {
+        showRecordedVideo(fileUri);
+        //show length of selected video
+        long videoLength = getIntent().getLongExtra(Constants.VIDEO_LENGTH, 0);
+        recordedSecondsTV.setVisibility(View.VISIBLE);
+        recordedSecondsTV.setText(Utils.formatMilliSeconds(videoLength));
+    }
+
+    private void initializeSelectedMultipleImagesType() {
+        multipleImagesView.setVisibility(View.VISIBLE);
+        nextImageButton.setVisibility(View.VISIBLE);
+        // showing all images in image switcher
+        imageSwitcher.setFactory(() -> {
+            FrameLayout.LayoutParams layoutParams
+                    = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
+            ImageView imgView = new ImageView(this);
+            imgView.setLayoutParams(layoutParams);
+            imgView.setScaleType(ImageView.ScaleType.FIT_XY);
+            return imgView;
+        });
+        imageSwitcher.setImageURI(imagesUris.get(0));
+        selectedImagePosition = 0;
+        //register listeners for previous & next button
+        registerClickListenersForPrevNextButtons();
+        onCaptureImage(null, true);
+    }
+
+    private void registerClickListenersForPrevNextButtons() {
+        nextImageButton.setOnClickListener(v -> {
+            ++selectedImagePosition;
+            prevImageButton.setVisibility(View.VISIBLE);
+            if (selectedImagePosition == imagesUris.size() - 1) {
+                nextImageButton.setVisibility(View.GONE);
+            }
+            imageSwitcher.setImageURI(imagesUris.get(selectedImagePosition));
+        });
+
+        prevImageButton.setOnClickListener(v -> {
+            --selectedImagePosition;
+            nextImageButton.setVisibility(View.VISIBLE);
+            if (selectedImagePosition == 0) {
+                prevImageButton.setVisibility(View.GONE);
+            }
+            imageSwitcher.setImageURI(imagesUris.get(selectedImagePosition));
+        });
     }
 
     private void initializeCameraX() {
@@ -204,7 +276,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
             String fileType = utils.getFieType(fileUri);
             if (recordType == QuestionItem.RecordType.VIDEO) {
                 startUploadingVideoService(fileUri, null, fileType);
-            } else if (recordType == QuestionItem.RecordType.IMAGE){
+            } else if (recordType == QuestionItem.RecordType.IMAGE) {
 //                Toast.makeText(this, "start uploading", Toast.LENGTH_LONG).show();
                 startUploadingVideoService(fileUri, audioRecordedFile.getPath(), fileType);
             }
@@ -243,11 +315,13 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     }
 
     @Override
-    public void onCaptureImage(Uri imageUri) {
-        fileUri = imageUri;
-        //show image view
-        imageView.setVisibility(View.VISIBLE);
-        imageView.setImageURI(imageUri);
+    public void onCaptureImage(Uri imageUri, boolean multipleImages) {
+        if (!multipleImages) {
+            fileUri = imageUri;
+            //show image view
+            imageView.setVisibility(View.VISIBLE);
+            imageView.setImageURI(imageUri);
+        }
         previewView.setVisibility(View.GONE);
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.recording_audio));
@@ -286,30 +360,37 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         handler.removeCallbacks(updateEverySecRunnable);
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
-        //show review view to accept or cancel video
-        reviewView.setVisibility(View.VISIBLE);
-        //hide record button
-        videoCaptureButton.setVisibility(View.GONE);
         //stop recorded audio
         audioRecorder.stop();
-        //show exoplayer audio
-        previewView.setVisibility(View.GONE);
-        playerView.setVisibility(View.GONE);
-        imageView.setVisibility(View.VISIBLE);
-        //show image with audio
-        exoPlayerManager = new ExoPlayerVideoManager();
-        exoPlayerManager.initializeAudioExoPlayer(this, audioRecordedFile.getPath(), true);
-        exoPlayerManager.initializePlayer(playerView);
-        //set captured image to the exoplayer
-        imageView.setVisibility(View.GONE);
-        playerView.setVisibility(View.VISIBLE);
-        try {
-//            Bitmap bitmap = BitmapFactory.decodeFile(RealPathUtil.getRealPath(this, fileUri));
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), fileUri);
-            Drawable drawable = new BitmapDrawable(getResources(), bitmap);
-            exoPlayerManager.setCapturedImageToPlayer(drawable);
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (imagesUris != null) {
+            //more than one image is selected, so combine them with the recorded audio in video and show it
+            Toast.makeText(this, "Images will be combined in video with the recorded audio and show it here", Toast.LENGTH_SHORT).show();
+//            execFFmpegBinary(imagesUris, audioRecordedFile.getPath());
+//            showRecordedVideo(videoUri);
+        } else {
+            //only one image is selected with recorded audio
+            //show review view to accept or cancel video
+            reviewView.setVisibility(View.VISIBLE);
+            //hide record button
+            videoCaptureButton.setVisibility(View.GONE);
+            //show exoplayer audio
+            previewView.setVisibility(View.GONE);
+            playerView.setVisibility(View.GONE);
+            imageView.setVisibility(View.VISIBLE);
+            //show image with audio
+            exoPlayerManager = new ExoPlayerVideoManager();
+            exoPlayerManager.initializeAudioExoPlayer(this, audioRecordedFile.getPath(), true);
+            exoPlayerManager.initializePlayer(playerView);
+            //set captured image to the exoplayer
+            imageView.setVisibility(View.GONE);
+            playerView.setVisibility(View.VISIBLE);
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), fileUri);
+                Drawable drawable = new BitmapDrawable(getResources(), bitmap);
+                exoPlayerManager.setCapturedImageToPlayer(drawable);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -118,8 +118,8 @@ public class MyUploadService extends MyBaseTaskService {
                 uploadToFirebaseStorage(fileUri, fileType, null);
             } else {
                 showProgressNotification(getString(R.string.compressing), 0, 0);
-                String input = utils.getPathFromUri(fileUri);
-                String output = utils.getCompressedPath(fileUri);
+                String input = Utils.getPathFromUri(this, fileUri);
+                String output = Utils.getCompressedPath(this, fileUri);
                 execFFmpegBinary(input, output);
             }
         }

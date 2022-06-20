@@ -29,7 +29,7 @@ public class Utils {
         return mimeTypeMap.getExtensionFromMimeType(r.getType(videoUri));
     }
 
-    public String getPathFromUri(Uri uri) {
+    public static String getPathFromUri(Context context, Uri uri) {
         String filePath = "unknown";//default fileName
         Uri filePathUri = uri;
         if (uri.getScheme().toString().compareTo("content") == 0) {
@@ -58,7 +58,7 @@ public class Utils {
         return filePath;
     }
 
-    public String getCompressedPath(Uri uri) {
+    public static String getCompressedPath(Context context, Uri uri) {
         String filePath = "unknown";//default fileName
         Uri filePathUri = uri;
         if (uri.getScheme().toString().compareTo("content") == 0) {
