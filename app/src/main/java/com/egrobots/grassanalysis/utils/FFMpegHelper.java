@@ -22,15 +22,7 @@ import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 
 public class FFMpegHelper {
 
-    private Context context;
-    private FFMpegCallback ffMpegCallback;
-
-    public FFMpegHelper(Context context, FFMpegCallback ffMpegCallback) {
-        this.context = context;
-        this.ffMpegCallback = ffMpegCallback;
-    }
-
-    public void compressVideo(String input, String output) {
+    public void compressVideo(String input, String output, FFMpegCallback ffMpegCallback) {
         try {
             Log.i(Config.TAG, "input file path : " + input);
             Log.i(Config.TAG, "output file path : " + output);
@@ -54,10 +46,9 @@ public class FFMpegHelper {
         }
     }
 
-    public void convertImagesWithAudioToVideo(List<Uri> imagesUris, String audioUri, String output) {
+    public void convertImagesWithAudioToVideo(List<Uri> imagesUris, String audioUri, String output, FFMpegCallback ffMpegCallback, Context context) {
 //        String output = getFilesDir().getPath() +  UUID.randomUUID().toString() + Constants.VIDEO_FILE_TYPE;
 //        String output = getExternalFilesDir(null) + UUID.randomUUID().toString() + Constants.VIDEO_FILE_TYPE;
-
         StringBuilder imagesPathsCmd = new StringBuilder();
         imagesPathsCmd.append("-framerate 1 ");
         for (Uri imageUri : imagesUris) {

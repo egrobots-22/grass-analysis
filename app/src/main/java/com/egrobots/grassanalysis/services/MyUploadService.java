@@ -69,8 +69,8 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
     private static long TOTAL_UNITS = 1000;
 
     private CompositeDisposable disposable = new CompositeDisposable();
+    private FFMpegHelper ffmpeg = new FFMpegHelper();
     private Utils utils = new Utils(this);
-    private FFMpegHelper ffmpeg;
 
     @Override
     public void onCreate() {
@@ -80,7 +80,6 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
         firebaseDataSource = new FirebaseDataSource(FirebaseStorage.getInstance().getReference(), FirebaseDatabase.getInstance());
         sharedPreferencesDataSource = new SharedPreferencesDataSource(getSharedPreferences(Constants.PREF_NAME, MODE_PRIVATE));
         mStorageRef = FirebaseStorage.getInstance().getReference();
-        ffmpeg = new FFMpegHelper(this);
         // [END get_storage_ref]
     }
 
@@ -123,7 +122,7 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
                 showProgressNotification(getString(R.string.compressing), 0, 0);
                 String input = Utils.getPathFromUri(this, fileUri);
                 String output = Utils.getCompressedPath(this, fileUri);
-                ffmpeg.compressVideo(input, output);
+                ffmpeg.compressVideo(input, output, this);
             }
         }
     }
