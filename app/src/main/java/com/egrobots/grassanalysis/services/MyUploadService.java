@@ -15,6 +15,7 @@ import com.egrobots.grassanalysis.datasource.locale.SharedPreferencesDataSource;
 import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 import com.egrobots.grassanalysis.presentation.videos.VideosTabActivity;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.FFMpegHelper;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -38,7 +39,7 @@ import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 /**
  * Service to handle uploading files to Firebase Storage.
  */
-public class MyUploadService extends MyBaseTaskService {
+public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.FFMpegCallback {
 
     private static final String TAG = "MyUploadService";
     private static final boolean COMPRESS_VIDEO = true;
@@ -69,6 +70,7 @@ public class MyUploadService extends MyBaseTaskService {
 
     private CompositeDisposable disposable = new CompositeDisposable();
     private Utils utils = new Utils(this);
+    private FFMpegHelper ffmpeg;
 
     @Override
     public void onCreate() {
@@ -78,6 +80,7 @@ public class MyUploadService extends MyBaseTaskService {
         firebaseDataSource = new FirebaseDataSource(FirebaseStorage.getInstance().getReference(), FirebaseDatabase.getInstance());
         sharedPreferencesDataSource = new SharedPreferencesDataSource(getSharedPreferences(Constants.PREF_NAME, MODE_PRIVATE));
         mStorageRef = FirebaseStorage.getInstance().getReference();
+        ffmpeg = new FFMpegHelper(this);
         // [END get_storage_ref]
     }
 
@@ -120,7 +123,7 @@ public class MyUploadService extends MyBaseTaskService {
                 showProgressNotification(getString(R.string.compressing), 0, 0);
                 String input = Utils.getPathFromUri(this, fileUri);
                 String output = Utils.getCompressedPath(this, fileUri);
-                execFFmpegBinary(input, output);
+                ffmpeg.compressVideo(input, output);
             }
         }
     }
@@ -210,28 +213,21 @@ public class MyUploadService extends MyBaseTaskService {
         return filter;
     }
 
-    private void execFFmpegBinary(String input, String output) {
-        try {
-            Log.i(Config.TAG, "input file path : " + input);
-            Log.i(Config.TAG, "output file path : " + output);
-//            String exe = "-i " + input + " -vf scale=1280:720 " + output;
-//            String exe = "-i " + input + " -vcodec libx265 -crf 18 " + output;
-            String exe = "-i "+ input +" -c:v libx265 -vtag hvc1 -c:a copy " + output;
-            FFmpeg.executeAsync(exe, (executionId, returnCode) -> {
-                if (returnCode == RETURN_CODE_SUCCESS) {
-                    Uri outputUri = FileProvider.getUriForFile(getApplicationContext(),
-                            getApplicationContext().getPackageName() + ".provider", new File(output));
-                    uploadToFirebaseStorage(outputUri, utils.getFieType(outputUri), null);
-                    showProgressNotification(getString(R.string.compressing), 10, 1000);
-                } else if (returnCode == RETURN_CODE_CANCEL) {
-                    Log.i(Config.TAG, "Async command execution cancelled by user.");
-                } else {
-                    Log.i(Config.TAG, String.format("Async command execution failed with returnCode=%d.", returnCode));
-                }
-            });
-        } catch (Exception e) {
-            // Mention to user the command is currently running
-        }
+    @Override
+    public void onFFMpegExecSuccess(String output) {
+        Uri outputUri = FileProvider.getUriForFile(getApplicationContext(),
+                getApplicationContext().getPackageName() + ".provider", new File(output));
+        uploadToFirebaseStorage(outputUri, utils.getFieType(outputUri), null);
+        showProgressNotification(getString(R.string.compressing), 0, 0);
     }
 
+    @Override
+    public void onFFMpegExecError(String error) {
+        Log.i(Config.TAG, "Async command execution failed: " + error);
+    }
+
+    @Override
+    public void onFFMpegExecCancel() {
+        Log.i(Config.TAG, "Async command execution cancelled by user.");
+    }
 }
