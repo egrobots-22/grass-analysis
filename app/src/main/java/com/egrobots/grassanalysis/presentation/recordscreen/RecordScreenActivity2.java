@@ -11,21 +11,14 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.ViewSwitcher;
 
-import com.arthenica.mobileffmpeg.Config;
-import com.arthenica.mobileffmpeg.FFmpeg;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.managers.AudioRecorder;
@@ -33,17 +26,22 @@ import com.egrobots.grassanalysis.managers.CameraXRecorder;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.FFMpegHelper;
 import com.egrobots.grassanalysis.utils.LoadingDialog;
+import com.egrobots.grassanalysis.utils.OpenGalleryActivityResultCallback;
 import com.egrobots.grassanalysis.utils.Utils;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import javax.inject.Inject;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
@@ -53,9 +51,6 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
-
-import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL;
-import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 
 public class RecordScreenActivity2 extends DaggerAppCompatActivity implements CameraXRecorder.CameraXCallback {
 
@@ -91,6 +86,10 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     ImageButton prevImageButton;
     @BindView(R.id.nextImageButton)
     ImageButton nextImageButton;
+    @BindView(R.id.add_image_button)
+    ImageButton addImageButton;
+    @BindView(R.id.delete_image_button)
+    ImageButton deleteImageButton;
 
     private CameraXRecorder cameraXRecorder;
     private int recordedSeconds;
@@ -104,13 +103,15 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private File audioRecordedFile;
     private boolean isAudioRecordingStarted;
     private int selectedImagePosition;
+    private ActivityResultLauncher openGalleryLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record_screen2);
         ButterKnife.bind(this);
-
+        registerForActivityResult();
+        initializeImageSwitcher();
         //get type of camera
         if (getIntent() != null) {
             recordType = (QuestionItem.RecordType) getIntent().getExtras().get(Constants.RECORD_TYPE);
@@ -118,21 +119,27 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
             imagesUris = getIntent().getParcelableArrayListExtra(Constants.SELECTED_MULTIPLE_IMAGES);
 
             if (fileUri == null && imagesUris == null) {
+                addImageButton.setVisibility(View.GONE);
+                deleteImageButton.setVisibility(View.GONE);
                 //no selected files, so we'll record images or videos
                 initializeCameraX();
             } else {
                 //there are selected files
                 if (recordType == QuestionItem.RecordType.VIDEO) {
+//                    fileUri = Uri.fromFile(new File(fileUri.getPath()));
                     initializeSelectedVideoType();
                 } else if (recordType == QuestionItem.RecordType.IMAGE) {
-                    onCaptureImage(fileUri, false);
+                    initializeSelectedImageType();
                 } else if (recordType == QuestionItem.RecordType.MUTLIPLE_IMAGES) {
                     initializeSelectedMultipleImagesType();
                 }
             }
         }
     }
+
     private void initializeSelectedVideoType() {
+        addImageButton.setVisibility(View.GONE);
+        deleteImageButton.setVisibility(View.GONE);
         showRecordedVideo(fileUri);
         //show length of selected video
         long videoLength = getIntent().getLongExtra(Constants.VIDEO_LENGTH, 0);
@@ -140,10 +147,34 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         recordedSecondsTV.setText(Utils.formatMilliSeconds(videoLength));
     }
 
+    private void initializeSelectedImageType() {
+        addImageButton.setVisibility(View.VISIBLE);
+        imagesUris = new ArrayList<>();
+        imagesUris.add(fileUri);
+        initializeSelectedMultipleImagesType();
+//        onCaptureImage(fileUri, false);
+    }
+
     private void initializeSelectedMultipleImagesType() {
+        addImageButton.setVisibility(View.VISIBLE);
+        deleteImageButton.setVisibility(View.VISIBLE);
         multipleImagesView.setVisibility(View.VISIBLE);
-        nextImageButton.setVisibility(View.VISIBLE);
+        if (imagesUris.size() > 1) {
+            nextImageButton.setVisibility(View.VISIBLE);
+        }
+        if (imagesUris.size() == 1) {
+            deleteImageButton.setVisibility(View.GONE);
+        }
         // showing all images in image switcher
+        imageSwitcher.setImageURI(imagesUris.get(0));
+        selectedImagePosition = 0;
+        //register listeners for previous & next button
+        registerClickListenersForPrevNextButtons();
+        //i think malhash lazma hna
+        onCaptureImage(null, true);
+    }
+
+    private void initializeImageSwitcher() {
         imageSwitcher.setFactory(() -> {
             FrameLayout.LayoutParams layoutParams
                     = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT);
@@ -152,11 +183,6 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
             imgView.setScaleType(ImageView.ScaleType.FIT_XY);
             return imgView;
         });
-        imageSwitcher.setImageURI(imagesUris.get(0));
-        selectedImagePosition = 0;
-        //register listeners for previous & next button
-        registerClickListenersForPrevNextButtons();
-        onCaptureImage(null, true);
     }
 
     private void registerClickListenersForPrevNextButtons() {
@@ -226,6 +252,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @Override
     public void onStartRecording() {
+        recordedSecondsTV.setVisibility(View.VISIBLE);
         recordedSecondsTV.setText("00:00");
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.stop_record));
@@ -272,13 +299,23 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @OnClick(R.id.done_button)
     public void onDoneClicked() {
+        if (imagesUris != null && imagesUris.size() > 1) {
+            //set record type to multiple images, to upload them as video not single image
+            recordType = QuestionItem.RecordType.MUTLIPLE_IMAGES;
+        }
         if (fileUri != null) {
             String fileType = utils.getFieType(fileUri);
-            if (recordType == QuestionItem.RecordType.VIDEO) {
-                startUploadingVideoService(fileUri, null, fileType);
-            } else if (recordType == QuestionItem.RecordType.IMAGE) {
+            if (fileType != null) {
+                if (recordType == QuestionItem.RecordType.VIDEO) {
+                    startUploadingVideoService(fileUri, null, fileType, true);
+                } else if (recordType == QuestionItem.RecordType.MUTLIPLE_IMAGES) {
+                    startUploadingVideoService(fileUri, null, fileType, false);
+                } else if (recordType == QuestionItem.RecordType.IMAGE) {
 //                Toast.makeText(this, "start uploading", Toast.LENGTH_LONG).show();
-                startUploadingVideoService(fileUri, audioRecordedFile.getPath(), fileType);
+                    startUploadingVideoService(fileUri, audioRecordedFile.getPath(), fileType, false);
+                }
+            } else {
+                Toast.makeText(this, "خطأ غير معروف", Toast.LENGTH_SHORT).show();
             }
             //release exoplayer
             if (exoPlayerManager != null) {
@@ -294,7 +331,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
             exoPlayerManager.releasePlayer();
         }
         recordedSeconds = 0;
-        recordedSecondsTV.setText("");
+        recordedSecondsTV.setVisibility(View.GONE);
         //show camerax view
         previewView.setVisibility(View.VISIBLE);
         playerView.setVisibility(View.GONE);
@@ -311,6 +348,39 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         } else {
             //reinitialize camera
             initializeCameraX();
+        }
+    }
+
+    @OnClick(R.id.add_image_button)
+    public void onAddImageClicked() {
+        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+        photoPickerIntent.setType("image/*");
+        photoPickerIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        photoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
+        openGalleryLauncher.launch(photoPickerIntent);
+    }
+
+    @OnClick(R.id.delete_image_button)
+    public void onDeleteImageClicked() {
+        imagesUris.remove(selectedImagePosition);
+        if (selectedImagePosition != 0) {
+            --selectedImagePosition;
+        }
+        imageSwitcher.setImageURI(imagesUris.get(selectedImagePosition));
+        if (imagesUris.size() > 1) {
+            deleteImageButton.setVisibility(View.VISIBLE);
+        } else if (imagesUris.size() == 1) {
+            deleteImageButton.setVisibility(View.GONE);
+            prevImageButton.setVisibility(View.GONE);
+            nextImageButton.setVisibility(View.GONE);
+            return;
+        }
+        if (selectedImagePosition == 0) {
+            nextImageButton.setVisibility(View.VISIBLE);
+            prevImageButton.setVisibility(View.GONE);
+        } else if (selectedImagePosition == imagesUris.size() - 1) {
+            nextImageButton.setVisibility(View.GONE);
+            prevImageButton.setVisibility(View.VISIBLE);
         }
     }
 
@@ -340,6 +410,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         } catch (IOException e) {
             e.printStackTrace();
         }
+        recordedSecondsTV.setVisibility(View.VISIBLE);
         recordedSecondsTV.setText("00:00");
         updateEverySecRunnable = new Runnable() {
             @Override
@@ -360,13 +431,44 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         handler.removeCallbacks(updateEverySecRunnable);
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
+        addImageButton.setVisibility(View.GONE);
+        deleteImageButton.setVisibility(View.GONE);
         //stop recorded audio
         audioRecorder.stop();
-        if (imagesUris != null) {
+        if (imagesUris != null && imagesUris.size() > 1) {
             //more than one image is selected, so combine them with the recorded audio in video and show it
+            LoadingDialog loadingDialog = new LoadingDialog();
+            loadingDialog.show(getSupportFragmentManager(), null);
             Toast.makeText(this, "Images will be combined in video with the recorded audio and show it here", Toast.LENGTH_SHORT).show();
-//            execFFmpegBinary(imagesUris, audioRecordedFile.getPath());
-//            showRecordedVideo(videoUri);
+            String output = getExternalFilesDir(null) + "/" + UUID.randomUUID().toString() + Constants.VIDEO_FILE_TYPE;
+            FFMpegHelper ffMpegHelper = new FFMpegHelper();
+            ffMpegHelper.convertImagesWithAudioToVideo(imagesUris, audioRecordedFile.getPath(), output,
+                    new FFMpegHelper.FFMpegCallback() {
+                        @Override
+                        public void onFFMpegExecSuccess(String output) {
+                            loadingDialog.dismiss();
+                            fileUri = Uri.fromFile(new File(output));
+                            showRecordedVideo(fileUri);
+                            multipleImagesView.setVisibility(View.GONE);
+                        }
+
+                        @Override
+                        public void onFFMpegExecError(String error) {
+                            Toast.makeText(RecordScreenActivity2.this, error, Toast.LENGTH_SHORT).show();
+                            loadingDialog.dismiss();
+                        }
+
+                        @Override
+                        public void onFFMpegExecCancel() {
+                            Toast.makeText(RecordScreenActivity2.this, "cancelled", Toast.LENGTH_SHORT).show();
+                            loadingDialog.dismiss();
+                        }
+
+                        @Override
+                        public void onFFmMpegExecProgress(long progress, long total) {
+
+                        }
+                    }, this);
         } else {
             //only one image is selected with recorded audio
             //show review view to accept or cancel video
@@ -400,12 +502,13 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         }
     }
 
-    private void startUploadingVideoService(Uri fileUri, String questionAudioUri, String fileType) {
+    private void startUploadingVideoService(Uri fileUri, String questionAudioUri, String fileType, boolean compressVideo) {
         Intent uploadServiceIntent = new Intent(this, MyUploadService.class);
         uploadServiceIntent.putExtra(MyUploadService.EXTRA_FILE_URI, fileUri);
         uploadServiceIntent.putExtra(MyUploadService.EXTRA_AUDIO_URI, questionAudioUri);
         uploadServiceIntent.putExtra(MyUploadService.FILE_TYPE, fileType);
         uploadServiceIntent.putExtra(MyUploadService.RECORD_TYPE, recordType);
+        uploadServiceIntent.putExtra(MyUploadService.COMPRESS_VIDEO_EXTRA, compressVideo);
         uploadServiceIntent.setAction(MyUploadService.ACTION_UPLOAD);
         startService(uploadServiceIntent);
         Toast.makeText(this, R.string.uploading_in_progress, Toast.LENGTH_SHORT).show();
@@ -474,4 +577,55 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         }
         return true;
     }
+
+    private void registerForActivityResult() {
+        openGalleryLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                new OpenGalleryActivityResultCallback(new OpenGalleryActivityResultCallback.OpenGalleryCallback() {
+
+                    @Override
+                    public void onSingleImageOrVideoSelected(Uri fileUri) {
+                        imagesUris.add(fileUri);
+                        imageSwitcher.setImageURI(fileUri);
+                        ++selectedImagePosition;
+                        if (imagesUris.size() > 1) {
+                            deleteImageButton.setVisibility(View.VISIBLE);
+                        } else {
+                            deleteImageButton.setVisibility(View.GONE);
+                        }
+                        if (selectedImagePosition == 0) {
+                            nextImageButton.setVisibility(View.VISIBLE);
+                            prevImageButton.setVisibility(View.GONE);
+                        } else if (selectedImagePosition == imagesUris.size() - 1) {
+                            nextImageButton.setVisibility(View.GONE);
+                            prevImageButton.setVisibility(View.VISIBLE);
+                        }
+                    }
+
+                    @Override
+                    public void onMultipleImagesSelected(ArrayList<Uri> uris) {
+                        imagesUris.addAll(uris);
+                        imageSwitcher.setImageURI(imagesUris.get(imagesUris.size() - 1));
+                        selectedImagePosition = imagesUris.size() - 1;
+                        if (imagesUris.size() > 1) {
+                            deleteImageButton.setVisibility(View.VISIBLE);
+                        } else {
+                            deleteImageButton.setVisibility(View.GONE);
+                        }
+                        if (selectedImagePosition == 0) {
+                            nextImageButton.setVisibility(View.VISIBLE);
+                            prevImageButton.setVisibility(View.GONE);
+                        } else if (selectedImagePosition == imagesUris.size() - 1) {
+                            nextImageButton.setVisibility(View.GONE);
+                            prevImageButton.setVisibility(View.VISIBLE);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(RecordScreenActivity2.this, error, Toast.LENGTH_SHORT).show();
+                    }
+                }));
+    }
+
 }

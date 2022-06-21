@@ -1,15 +1,12 @@
 package com.egrobots.grassanalysis.presentation.videos;
 
 import android.Manifest;
-import android.app.Activity;
-import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.egrobots.grassanalysis.R;
@@ -17,6 +14,7 @@ import com.egrobots.grassanalysis.adapters.ViewPagerAdapter;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity2;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.egrobots.grassanalysis.utils.OpenGalleryActivityResultCallback;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -68,51 +66,49 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
     private void registerForActivityResult() {
         openGalleryLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == Activity.RESULT_OK){
-                        Intent questionIntent = new Intent(this, RecordScreenActivity2.class);
-                        Intent data = result.getData();
-                        if (data != null && data.getClipData() != null) {
-                            //if multiple images are selected
-                            ArrayList<Uri> selectedUris = new ArrayList<>();
-                            for (int i = 0; i < data.getClipData().getItemCount(); i++) {
-                                Uri imageUri = data.getClipData().getItemAt(i).getUri();
-                                //check type of selected item, send error message if video is selected with image
-                                if (getContentResolver().getType(imageUri).contains("video")) {
-                                    Toast.makeText(VideosTabActivity.this, "لا يمكنك تحميل فيديو مع صورة أو أكثر من فيديو", Toast.LENGTH_LONG).show();
-                                    return;
-                                }
-                                selectedUris.add(imageUri);
+                new OpenGalleryActivityResultCallback(new OpenGalleryActivityResultCallback.OpenGalleryCallback() {
+                    Intent questionIntent = new Intent(VideosTabActivity.this, RecordScreenActivity2.class);
+
+                    @Override
+                    public void onSingleImageOrVideoSelected(Uri fileUri) {
+                        String type = getContentResolver().getType(fileUri);
+                        if (type.contains("video")) {
+                            questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.VIDEO);
+                            //get video length
+                            long videoLength = getVideoLength(fileUri);
+                            questionIntent.putExtra(Constants.VIDEO_LENGTH, videoLength);
+                            if (videoLength > TimeUnit.SECONDS.toMillis(Constants.MAX_VID_DURATION_SEC)) {
+                                Toast.makeText(VideosTabActivity.this, R.string.cant_upload_video_max_cause, Toast.LENGTH_LONG).show();
+                                return;
                             }
-                            questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.MUTLIPLE_IMAGES);
-                            questionIntent.putParcelableArrayListExtra(Constants.SELECTED_MULTIPLE_IMAGES, selectedUris);
-                            startActivity(questionIntent);
-                        } else if (data.getData() != null) {
-                            //if single image is selected
-                            Uri fileUri = data.getData();
-                            if (fileUri != null) {
-                                String type = getContentResolver().getType(fileUri);
-                                if (type.contains("video")) {
-                                    questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.VIDEO);
-                                    //get video length
-                                    long videoLength = getVideoLength(fileUri);
-                                    questionIntent.putExtra(Constants.VIDEO_LENGTH, videoLength);
-                                    if (videoLength > TimeUnit.SECONDS.toMillis(Constants.MAX_VID_DURATION_SEC)) {
-                                        Toast.makeText(VideosTabActivity.this, R.string.cant_upload_video_max_cause, Toast.LENGTH_LONG).show();
-                                        return;
-                                    }
-                                } else if (type.contains("image")) {
-                                    questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.IMAGE);
-                                } else {
-                                    Toast.makeText(VideosTabActivity.this, "Not supported file", Toast.LENGTH_SHORT).show();
-                                    return;
-                                }
-                                questionIntent.putExtra(Constants.SELECTED_IMAGE_VIDEO, fileUri);
-                                startActivity(questionIntent);
+                        } else if (type.contains("image")) {
+                            questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.IMAGE);
+                        } else {
+                            Toast.makeText(VideosTabActivity.this, "Not supported file", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        questionIntent.putExtra(Constants.SELECTED_IMAGE_VIDEO, fileUri);
+                        startActivity(questionIntent);
+                    }
+
+                    @Override
+                    public void onMultipleImagesSelected(ArrayList<Uri> imagesUris) {
+                        for (Uri uri : imagesUris) {
+                            if (getContentResolver().getType(uri).contains("video")) {
+                                Toast.makeText(VideosTabActivity.this, "لا يمكنك تحميل فيديو مع صورة أو أكثر من فيديو", Toast.LENGTH_LONG).show();
+                                return;
                             }
                         }
+                        questionIntent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.MUTLIPLE_IMAGES);
+                        questionIntent.putParcelableArrayListExtra(Constants.SELECTED_MULTIPLE_IMAGES, imagesUris);
+                        startActivity(questionIntent);
                     }
-                });
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(VideosTabActivity.this, error, Toast.LENGTH_SHORT).show();
+                    }
+                }));
     }
 
     private long getVideoLength(Uri fileUri) {

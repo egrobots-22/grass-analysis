@@ -7,8 +7,6 @@ import android.os.IBinder;
 import android.util.Log;
 
 import com.arthenica.mobileffmpeg.Config;
-import com.arthenica.mobileffmpeg.ExecuteCallback;
-import com.arthenica.mobileffmpeg.FFmpeg;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.datasource.locale.SharedPreferencesDataSource;
@@ -23,6 +21,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
+import java.util.UUID;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
@@ -33,16 +32,12 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL;
-import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
-
 /**
  * Service to handle uploading files to Firebase Storage.
  */
 public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.FFMpegCallback {
 
     private static final String TAG = "MyUploadService";
-    private static final boolean COMPRESS_VIDEO = true;
 
     /**
      * Intent Actions
@@ -51,6 +46,7 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
     public static final String UPLOAD_COMPLETED = "upload_completed";
     public static final String UPLOAD_ERROR = "upload_error";
     public static final String FILE_TYPE = "file_type";
+    public static final String COMPRESS_VIDEO_EXTRA = "compress_video";
     public static final String RECORD_TYPE = Constants.RECORD_TYPE;
 
     /**
@@ -71,6 +67,7 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
     private CompositeDisposable disposable = new CompositeDisposable();
     private FFMpegHelper ffmpeg = new FFMpegHelper();
     private Utils utils = new Utils(this);
+    private boolean compressVideo = true;
 
     @Override
     public void onCreate() {
@@ -97,6 +94,7 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
             String questionAudioUri = intent.getStringExtra(EXTRA_AUDIO_URI);
             String fileType = intent.getStringExtra(FILE_TYPE);
             QuestionItem.RecordType recordType = (QuestionItem.RecordType) intent.getExtras().get(RECORD_TYPE);
+            compressVideo = intent.getBooleanExtra(COMPRESS_VIDEO_EXTRA, false);
             uploadFromUri(fileUri, fileType, questionAudioUri, recordType);
         }
         return START_REDELIVER_INTENT;
@@ -115,14 +113,15 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
             uploadToFirebaseStorage(fileUri, fileType, questionAudioUri);
         } else {
             // Upload file to Firebase Storage
-            if (!COMPRESS_VIDEO) {
+            if (!compressVideo) {
                 showProgressNotification(getString(R.string.progress_uploading), 0, 0);
                 uploadToFirebaseStorage(fileUri, fileType, null);
             } else {
                 showProgressNotification(getString(R.string.compressing), 0, 0);
                 String input = Utils.getPathFromUri(this, fileUri);
-                String output = Utils.getCompressedPath(this, fileUri);
-                ffmpeg.compressVideo(input, output, this);
+//                String output = Utils.getCompressedPath(this, fileUri);
+                String output = getExternalFilesDir(null) + "/converted_" + UUID.randomUUID().toString() + Constants.VIDEO_FILE_TYPE;
+                ffmpeg.compressVideo(input, output, this, getApplicationContext());
             }
         }
     }
@@ -222,11 +221,18 @@ public class MyUploadService extends MyBaseTaskService implements FFMpegHelper.F
 
     @Override
     public void onFFMpegExecError(String error) {
+        showProgressNotification(getString(R.string.failed), 0, 0);
         Log.i(Config.TAG, "Async command execution failed: " + error);
     }
 
     @Override
     public void onFFMpegExecCancel() {
+        showProgressNotification(getString(R.string.failed), 0, 0);
         Log.i(Config.TAG, "Async command execution cancelled by user.");
+    }
+
+    @Override
+    public void onFFmMpegExecProgress(long progress, long total) {
+        showProgressNotification(getString(R.string.compressing), progress, total);
     }
 }

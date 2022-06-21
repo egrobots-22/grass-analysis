@@ -26,7 +26,12 @@ public class Utils {
         ContentResolver r = context.getContentResolver();
         // get the file type ,in this case its mp4
         MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
-        return mimeTypeMap.getExtensionFromMimeType(r.getType(videoUri));
+        String fileType = mimeTypeMap.getExtensionFromMimeType(r.getType(videoUri));
+        if (fileType == null) {
+            //it's not content uri, so get file extension
+            fileType = videoUri.getLastPathSegment().substring(videoUri.getLastPathSegment().lastIndexOf(".") + 1);
+        }
+        return fileType;
     }
 
     public static String getPathFromUri(Context context, Uri uri) {
