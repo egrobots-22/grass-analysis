@@ -59,8 +59,8 @@ public class FFMpegHelper {
 //        String output = getExternalFilesDir(null) + UUID.randomUUID().toString() + Constants.VIDEO_FILE_TYPE;
         //get audio length
         int audioLength = getMediaLengthInSecs(context, Uri.parse(audioUri));
-        int imageLength = audioLength / imagesUris.size();
-        imageLength = imageLength == 0 ? 1 : imageLength;
+        double imageDuration = (double) audioLength / imagesUris.size();
+        imageDuration = imageDuration == 0 ? 1 : imageDuration;
         //create file with images paths
         File inputFile = new File(context.getExternalFilesDir(null), UUID.randomUUID().toString() + ".txt");
         BufferedWriter bufferedWriter = null;
@@ -69,7 +69,7 @@ public class FFMpegHelper {
             int i=0;
             for (Uri imageUri : imagesUris) {
                 bufferedWriter.write("file '" + Utils.getPathFromUri(context, imageUri) + "'\n");
-                bufferedWriter.write("duration " + imageLength + "\n");
+                bufferedWriter.write("duration " + imageDuration + "\n");
 //                if (i == imagesUris.size() - 1){
 //                    bufferedWriter.write("file '" + Utils.getPathFromUri(context, imageUri) + "'\n");
 //                }

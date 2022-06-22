@@ -9,6 +9,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.util.Size;
 import android.widget.Toast;
 
 import com.arthenica.mobileffmpeg.Config;
@@ -25,10 +26,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 
 import androidx.annotation.NonNull;
+import androidx.camera.core.AspectRatio;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.Preview;
+import androidx.camera.core.impl.ImageCaptureConfig;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.video.MediaStoreOutputOptions;
 import androidx.camera.video.PendingRecording;
@@ -97,7 +100,17 @@ public class CameraXRecorder {
 
 
         videoCapture = VideoCapture.withOutput(recorder);
-        imageCapture = new ImageCapture.Builder().build();
+
+//        ImageCa imageCaptureConfig = new ImageCaptureConfig()
+//                .apply {
+//            setCaptureMode(ImageCapture.CaptureMode.MAX_QUALITY)
+//            setTargetAspectRatio(SQUARE_ASPECT_RATIO)
+//            setTargetRotation(viewFinder.display.rotation)
+//        }.build()
+        imageCapture = new ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .setMaxResolution(new Size(1080, 1920))
+                .build();
 
         //bind to lifecycle:
         cameraProvider.bindToLifecycle((LifecycleOwner) context, cameraSelector, preview, videoCapture, imageCapture);
@@ -105,20 +118,20 @@ public class CameraXRecorder {
 
     public void captureImage() {
         if (imageCapture != null) {
-            boolean isRecordingAudio = recordingAudio;
-            if (isRecordingAudio) {
-                //stop recording audio
-                cameraXCallback.onStopRecordingAudio();
-                recordingAudio = false;
-                cameraProvider.unbindAll();
-                return;
-            }
+//            boolean isRecordingAudio = recordingAudio;
+//            if (isRecordingAudio) {
+//                //stop recording audio
+//                cameraXCallback.onStopRecordingAudio();
+//                recordingAudio = false;
+//                cameraProvider.unbindAll();
+//                return;
+//            }
             long timestamp = System.currentTimeMillis();
             ContentValues contentValues = new ContentValues();
             contentValues.put(MediaStore.MediaColumns.DISPLAY_NAME, timestamp);
             contentValues.put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg");
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.P) {
-                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraX-Video");
+                contentValues.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CameraXImages");
             }
             ImageCapture.OutputFileOptions outputFileOptions = new ImageCapture.OutputFileOptions.Builder(
                     context.getContentResolver(),
@@ -131,8 +144,7 @@ public class CameraXRecorder {
                         public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
                             Uri imageUri = outputFileResults.getSavedUri();
                             recordingAudio = true;
-                            cameraXCallback.onCaptureImage(imageUri, false);
-//                            cameraXCallback.onStartRecordingAudio();
+                            cameraXCallback.onCaptureImage(imageUri);
                         }
 
                         @Override
@@ -193,6 +205,10 @@ public class CameraXRecorder {
         }
     }
 
+    public void releaseCameraProvider() {
+        cameraProvider.unbindAll();
+    }
+
     public void stopRecording() {
         recordVideo();
     }
@@ -211,7 +227,7 @@ public class CameraXRecorder {
 
         void onError(String error);
 
-        void onCaptureImage(Uri imageUri, boolean multipleImages);
+        void onCaptureImage(Uri imageUri);
 
         void onStartRecordingAudio();
 

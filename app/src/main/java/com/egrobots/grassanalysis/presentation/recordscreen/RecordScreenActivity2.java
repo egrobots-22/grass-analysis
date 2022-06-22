@@ -104,6 +104,8 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     private boolean isAudioRecordingStarted;
     private int selectedImagePosition;
     private ActivityResultLauncher openGalleryLauncher;
+    private boolean isUsingCamera;
+    private boolean isAddingNewImage = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,20 +113,25 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
         setContentView(R.layout.activity_record_screen2);
         ButterKnife.bind(this);
         registerForActivityResult();
+        registerClickListenersForPrevNextButtons();
         initializeImageSwitcher();
         //get type of camera
         if (getIntent() != null) {
             recordType = (QuestionItem.RecordType) getIntent().getExtras().get(Constants.RECORD_TYPE);
             fileUri = getIntent().getParcelableExtra(Constants.SELECTED_IMAGE_VIDEO);
             imagesUris = getIntent().getParcelableArrayListExtra(Constants.SELECTED_MULTIPLE_IMAGES);
+            if (imagesUris == null)
+                imagesUris = new ArrayList<>();
 
-            if (fileUri == null && imagesUris == null) {
+            if (fileUri == null && imagesUris.size() == 0) {
+                isUsingCamera = true;
                 addImageButton.setVisibility(View.GONE);
                 deleteImageButton.setVisibility(View.GONE);
                 //no selected files, so we'll record images or videos
                 initializeCameraX();
             } else {
                 //there are selected files
+                isUsingCamera = false;
                 if (recordType == QuestionItem.RecordType.VIDEO) {
 //                    fileUri = Uri.fromFile(new File(fileUri.getPath()));
                     initializeSelectedVideoType();
@@ -148,30 +155,31 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     }
 
     private void initializeSelectedImageType() {
-        addImageButton.setVisibility(View.VISIBLE);
-        imagesUris = new ArrayList<>();
+        //add selected image to the image switcher view
         imagesUris.add(fileUri);
         initializeSelectedMultipleImagesType();
-//        onCaptureImage(fileUri, false);
+        addImageButton.setVisibility(View.VISIBLE);
     }
 
     private void initializeSelectedMultipleImagesType() {
-        addImageButton.setVisibility(View.VISIBLE);
-        deleteImageButton.setVisibility(View.VISIBLE);
+        //show multiple images view
         multipleImagesView.setVisibility(View.VISIBLE);
-        if (imagesUris.size() > 1) {
-            nextImageButton.setVisibility(View.VISIBLE);
-        }
+        // showing all images in image switcher
+        selectedImagePosition = 0;
+        imageSwitcher.setImageURI(imagesUris.get(selectedImagePosition));
+        //showing buttons
+        addImageButton.setVisibility(View.VISIBLE);
         if (imagesUris.size() == 1) {
             deleteImageButton.setVisibility(View.GONE);
+        } else if (imagesUris.size() > 1) {
+            nextImageButton.setVisibility(View.VISIBLE);
+            deleteImageButton.setVisibility(View.VISIBLE);
         }
-        // showing all images in image switcher
-        imageSwitcher.setImageURI(imagesUris.get(0));
-        selectedImagePosition = 0;
+        //show record audio button to enable user recording audio
+        videoCaptureButton.setEnabled(true);
+        videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.recording_audio));
         //register listeners for previous & next button
-        registerClickListenersForPrevNextButtons();
-        //i think malhash lazma hna
-        onCaptureImage(null, true);
+//        registerClickListenersForPrevNextButtons();
     }
 
     private void initializeImageSwitcher() {
@@ -231,15 +239,16 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
             if (recordType == QuestionItem.RecordType.VIDEO) {
                 cameraXRecorder.recordVideo();
             } else {
-                if (fileUri == null) {
+                if (isAddingNewImage) {
                     //no image captured yet
                     cameraXRecorder.captureImage();
-                } else if (!isAudioRecordingStarted) {
-                    //recording audio is not started yet, so start it
-                    onStartRecordingAudio();
                 } else {
-                    //recording audio is started, so stop it by captureImage method to unbind camera provider
-                    cameraXRecorder.captureImage();
+                    if (!isAudioRecordingStarted) {
+                        //recording audio is not started yet, so start it
+                        onStartRecordingAudio();
+                    } else {
+                        onStopRecordingAudio();
+                    }
                 }
             }
         }
@@ -353,11 +362,22 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     @OnClick(R.id.add_image_button)
     public void onAddImageClicked() {
-        Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-        photoPickerIntent.setType("image/*");
-        photoPickerIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        photoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
-        openGalleryLauncher.launch(photoPickerIntent);
+        if (isUsingCamera) {
+            initializeCameraX();
+            fileUri = null; //to capture new image
+            previewView.setVisibility(View.VISIBLE);
+            multipleImagesView.setVisibility(View.GONE);
+            videoCaptureButton.setEnabled(true);
+            videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.start_record));
+            isAddingNewImage = true;
+//            cameraXRecorder.captureImage(false);
+        } else {
+            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+            photoPickerIntent.setType("image/*");
+            photoPickerIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            photoPickerIntent.setAction(Intent.ACTION_GET_CONTENT);
+            openGalleryLauncher.launch(photoPickerIntent);
+        }
     }
 
     @OnClick(R.id.delete_image_button)
@@ -385,16 +405,36 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
     }
 
     @Override
-    public void onCaptureImage(Uri imageUri, boolean multipleImages) {
-        if (!multipleImages) {
-            fileUri = imageUri;
-            //show image view
-            imageView.setVisibility(View.VISIBLE);
-            imageView.setImageURI(imageUri);
-        }
+    public void onCaptureImage(Uri imageUri) {
+//        fileUri = imageUri;
+        //show image view
+//            imageView.setVisibility(View.VISIBLE);
+//            imageView.setImageURI(imageUri);
+        isAddingNewImage = false;
         previewView.setVisibility(View.GONE);
+        multipleImagesView.setVisibility(View.VISIBLE);
+        addImageButton.setVisibility(View.VISIBLE);
         videoCaptureButton.setEnabled(true);
         videoCaptureButton.setImageDrawable(ContextCompat.getDrawable(RecordScreenActivity2.this, R.drawable.recording_audio));
+
+        imagesUris.add(imageUri);
+        selectedImagePosition = imagesUris.size() - 1;
+        imageSwitcher.setImageURI(imagesUris.get(selectedImagePosition));
+        if (imagesUris.size() > 1) {
+            deleteImageButton.setVisibility(View.VISIBLE);
+        } else {
+            deleteImageButton.setVisibility(View.GONE);
+            prevImageButton.setVisibility(View.GONE);
+            return;
+        }
+
+        if (selectedImagePosition == 0) {
+            nextImageButton.setVisibility(View.VISIBLE);
+            prevImageButton.setVisibility(View.GONE);
+        } else if (selectedImagePosition == imagesUris.size() - 1) {
+            nextImageButton.setVisibility(View.GONE);
+            prevImageButton.setVisibility(View.VISIBLE);
+        }
     }
 
     @Override
