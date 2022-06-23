@@ -171,13 +171,14 @@ public class SwipeableVideosFragment extends DaggerFragment
                 //no data at all
                 showEmptyView(true);
             } else {
-                showEmptyView(false);
                 if (videoItems.size() == 0) {
+                    showEmptyView(false);
 //                    Toast.makeText(getContext(), R.string.no_more_videos, Toast.LENGTH_SHORT).show();
                     Log.i(TAG, "no more videos");
                 } else if (videoItems.size() == 1 &&
                         videoItems.get(0).getFlag() != null &&
                         videoItems.get(0).getFlag().equals(Constants.LATEST)) {
+//                    showEmptyView(false);
                     //retrieve another data ==> videoItems.get(0) is the latest video sent, so we get it's timestamp
                     swipeableVideosViewModel.getNextOtherUsersVideos(
                             videoItems.get(0).getTimestamp() + 1,
@@ -186,9 +187,11 @@ public class SwipeableVideosFragment extends DaggerFragment
                 } else if (videoItems.size() == 1 &&
                         videoItems.get(0).getFlag() != null &&
                         videoItems.get(0).getFlag().equals(Constants.UPLOADED)) {
+                    showEmptyView(false);
                     //uploaded video
                     videosAdapter.addNewVideo(getContext(), videoItems.get(0));
                 } else {
+                    showEmptyView(false);
                     lastTimestamp = videoItems.get(videoItems.size() - 1).getTimestamp();
                     videosAdapter.addAll(getContext(), videoItems);
                 }

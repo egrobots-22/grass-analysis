@@ -38,7 +38,7 @@ import io.reactivex.Single;
 public class FirebaseDataSource {
 
     private static final String TAG = "FirebaseDataSource";
-    private static final int LIMIT_ITEM_COUNT = 2;
+    private static final int LIMIT_ITEM_COUNT = 3;
 
     private StorageReference storageReference;
     private FirebaseDatabase firebaseDatabase;

@@ -86,8 +86,8 @@ public class FFMpegHelper {
                 }
             }
         }
-//        String exe = imagesPathsCmd + " -i " + audioUri + " -c:v libx264 -r 30 " + output;
-        String exe = "-f concat -safe 0 -i " + inputFile.getPath() + " -i " + audioUri + " -c:v libx264 -r 30 " + output;
+
+        String exe = "-f concat -safe 0 -i " + inputFile.getPath() + " -i " + audioUri + " -c:v libx264 -r 30 -pix_fmt yuv420p -vf \"crop=trunc(iw/2)*2:trunc(ih/2)*2\" " + output;
         Log.i("IMAGES TO VIDEO", "execFFmpegBinary: " + exe);
         try {
             FFmpeg.executeAsync(exe, (executionId, returnCode) -> {

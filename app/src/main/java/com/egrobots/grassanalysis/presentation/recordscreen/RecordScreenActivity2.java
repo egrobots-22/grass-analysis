@@ -156,6 +156,7 @@ public class RecordScreenActivity2 extends DaggerAppCompatActivity implements Ca
 
     private void initializeSelectedImageType() {
         //add selected image to the image switcher view
+        imagesUris = new ArrayList<>();
         imagesUris.add(fileUri);
         initializeSelectedMultipleImagesType();
         addImageButton.setVisibility(View.VISIBLE);
