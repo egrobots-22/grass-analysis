@@ -25,7 +25,6 @@ import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.network.NetworkStateManager;
 import com.egrobots.grassanalysis.services.MyUploadService;
 import com.egrobots.grassanalysis.utils.Constants;
-import com.egrobots.grassanalysis.utils.OnSwipeTouchListener;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.ViewModelProviderFactory;
 
@@ -116,17 +115,16 @@ public class SwipeableVideosFragment extends DaggerFragment
         viewPagerVideos.setAdapter(videosAdapter);
         viewPagerVideos.registerOnPageChangeCallback(new OnVideoChangeCallback());
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
-//        observeExistVideosState();
+        observeExistVideosState();
         observeNetworkConnection();
         observeVideosUris();
         observeUploadingRecordedAudio();
         if (isCurrentUser) {
-//            swipeableVideosViewModel.isCurrentUserVideosFound();
-            swipeableVideosViewModel.getNextOtherUsersVideos(null, true, false);
+            swipeableVideosViewModel.isCurrentUserVideosFound();
         } else {
-//            swipeableVideosViewModel.isOtherVideosFound();
-            swipeableVideosViewModel.getNextOtherUsersVideos(null, false, false);
+            swipeableVideosViewModel.isOtherVideosFound();
         }
+        swipeableVideosViewModel.getNextVideos(null, isCurrentUser, false);
         return view;
     }
 
@@ -140,7 +138,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                         //hide the noNetworkView
                         noNetworkView.setVisibility(View.GONE);
                         //retrieve data again
-                        swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
+                        swipeableVideosViewModel.getNextVideos(lastTimestamp + 1, isCurrentUser, false);
                     }
                     networkState = curState;
                 });
@@ -152,13 +150,9 @@ public class SwipeableVideosFragment extends DaggerFragment
     private void observeExistVideosState() {
         swipeableVideosViewModel.observeExistVideosState().observe(getViewLifecycleOwner(), isDataExists -> {
             if (!isDataExists) {
-                viewPagerVideos.setVisibility(View.GONE);
-//                    progressBar.setVisibility(View.GONE);
-                emptyView.setVisibility(View.VISIBLE);
+                showEmptyView(true);
             } else {
-                viewPagerVideos.setVisibility(View.VISIBLE);
-//                    progressBar.setVisibility(View.VISIBLE);
-                emptyView.setVisibility(View.GONE);
+                showEmptyView(false);
             }
         });
     }
@@ -168,19 +162,17 @@ public class SwipeableVideosFragment extends DaggerFragment
             if (videoItems == null) {
                 Toast.makeText(getContext(), getString(R.string.no_intenet_connection), Toast.LENGTH_SHORT).show();
             } else if (videoItems.size() == 0 && videosAdapter.getItemCount() == 0) {
-                //no data at all
+                //no data at all -
                 showEmptyView(true);
             } else {
                 if (videoItems.size() == 0) {
                     showEmptyView(false);
-//                    Toast.makeText(getContext(), R.string.no_more_videos, Toast.LENGTH_SHORT).show();
                     Log.i(TAG, "no more videos");
                 } else if (videoItems.size() == 1 &&
                         videoItems.get(0).getFlag() != null &&
                         videoItems.get(0).getFlag().equals(Constants.LATEST)) {
-//                    showEmptyView(false);
                     //retrieve another data ==> videoItems.get(0) is the latest video sent, so we get it's timestamp
-                    swipeableVideosViewModel.getNextOtherUsersVideos(
+                    swipeableVideosViewModel.getNextVideos(
                             videoItems.get(0).getTimestamp() + 1,
                             isCurrentUser,
                             false);
@@ -383,8 +375,7 @@ public class SwipeableVideosFragment extends DaggerFragment
             if (prevPosition < position && position == curAdapterSize - 1) {
                 //get next block of videos
                 if (networkState) {
-//                    Toast.makeText(getContext(), "Retrieving new 2 videos", Toast.LENGTH_SHORT).show();
-                    swipeableVideosViewModel.getNextOtherUsersVideos(lastTimestamp + 1, isCurrentUser, false);
+                    swipeableVideosViewModel.getNextVideos(lastTimestamp + 1, isCurrentUser, false);
                 } else {
                     Toast.makeText(getContext(),
                             getString(R.string.no_intenet_connection) + ", " + getString(R.string.connect_try_again)

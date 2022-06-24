@@ -114,7 +114,7 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public void getNextOtherUsersVideos(Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
+    public void getNextVideos(Long lastTimestamp, boolean isCurrentUser, boolean newVideoUploaded) {
         databaseRepository.getOtherUsersVideos(localDataRepository.getDeviceToken(), lastTimestamp, isCurrentUser, newVideoUploaded)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
