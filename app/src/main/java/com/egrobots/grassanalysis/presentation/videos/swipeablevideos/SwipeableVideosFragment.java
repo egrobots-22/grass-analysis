@@ -56,6 +56,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         implements RecordAudioImpl.RecordAudioCallback, ExoPlayerVideoManager.VideoManagerCallback, AudioPlayer.AudioPlayCallback {
     private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
+    private static final int RETRIEVED_VIDEOS_LIMIT = 3;
 
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
@@ -83,6 +84,7 @@ public class SwipeableVideosFragment extends DaggerFragment
     private Boolean networkState = null;
     private AudioPlayer audioPlayer;
     private String currentPlayingAnswerId;
+    private int curVideosPage = 0;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -186,6 +188,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                     showEmptyView(false);
                     lastTimestamp = videoItems.get(videoItems.size() - 1).getTimestamp();
                     videosAdapter.addAll(getContext(), videoItems);
+//                    curVideosPage++;
                 }
             }
         });
@@ -372,7 +375,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                 exoPlayerVideoManagerCur.play();
             }
             int curAdapterSize = videosAdapter.questionItems.size();
-            if (prevPosition < position && position == curAdapterSize - 1) {
+            if (prevPosition < position && position == curAdapterSize - 1) { //scroll forward
                 //get next block of videos
                 if (networkState) {
                     swipeableVideosViewModel.getNextVideos(lastTimestamp + 1, isCurrentUser, false);
@@ -381,12 +384,88 @@ public class SwipeableVideosFragment extends DaggerFragment
                             getString(R.string.no_intenet_connection) + ", " + getString(R.string.connect_try_again)
                             , Toast.LENGTH_SHORT).show();
                 }
+                //release old videos
+                if (curVideosPage > 1) {
+                    releasePrevOfCurPage();
+                }
+            } else if (prevPosition < position && position == (curVideosPage * RETRIEVED_VIDEOS_LIMIT) && position < curAdapterSize) {
+                //enters next page (scroll forward
+                curVideosPage++;
+                //reinitialize next page videos
+                reinitializeNextOfCurPage(curAdapterSize);
+
+            } else if (prevPosition > position && curVideosPage > 2) { //scroll backward
+                Toast.makeText(getContext(), "Scroll backward", Toast.LENGTH_SHORT).show();
+                //decrease current page
+                if ((position + 1) % RETRIEVED_VIDEOS_LIMIT == 0) {
+                    curVideosPage--;
+//                    int lastPositionOfPrevPage = (curVideosPage * RETRIEVED_VIDEOS_LIMIT) - 1;
+//                    if (position == lastPositionOfPrevPage) {
+                    Toast.makeText(getContext(), "enters previous page", Toast.LENGTH_SHORT).show();
+                    //release cur page + 1 videos if found
+                    releaseNextOfCurPage(curAdapterSize);
+                    //enters prev page ==> reinitialize prev prev page
+                    reinitializePrevOfCurPage();
+                    Toast.makeText(getContext(), "Current Page = " + curVideosPage, Toast.LENGTH_SHORT).show();
+                }
             }
             if (videosAdapter.getAudioAnswersRecyclerViewForQuestion(position) != null) {
                 //to show audios answers recycler view if it's hidden by swipe gesture
                 videosAdapter.getAudioAnswersRecyclerViewForQuestion(position).setVisibility(View.VISIBLE);
             }
             prevPosition = position;
+        }
+
+        private void releasePrevOfCurPage() {
+            //get positions of videos that will be released
+            int to = RETRIEVED_VIDEOS_LIMIT * (curVideosPage - 1) - 1;
+            int from = to - (RETRIEVED_VIDEOS_LIMIT - 1);
+            for (int i = from; i <= to; i++) {
+                videosAdapter.getCurrentExoPlayerManagerList().get(i).stopPlayer();
+                Log.e(TAG, "Scroll forward - Stop video position " + i);
+            }
+            Toast.makeText(getContext(), "Scroll forward - Release page: " + (curVideosPage - 1)
+                    + ", from: " + from + " to: " + to, Toast.LENGTH_SHORT).show();
+        }
+
+        private void reinitializeNextOfCurPage(int curAdapterSize) {
+            int firstPositionOfNextPage = (curVideosPage + 1) * RETRIEVED_VIDEOS_LIMIT;
+            if (firstPositionOfNextPage < curAdapterSize) {     //if not last page of retrieved videos
+                int lastPositionOfNextPage = firstPositionOfNextPage + (RETRIEVED_VIDEOS_LIMIT - 1);
+                for (int i = firstPositionOfNextPage; i <= lastPositionOfNextPage; i++) {
+                    videosAdapter.getCurrentExoPlayerManagerList().get(i).play();
+                    videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer();
+                }
+                Toast.makeText(getContext(), "Scroll forward - Reinitialize page: " + (curVideosPage + 1)
+                        + ", from: " + firstPositionOfNextPage + " to: " + lastPositionOfNextPage, Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        private void releaseNextOfCurPage(int curAdapterSize) {
+            int lastPositionOfNextPage = ((curVideosPage + 2) * RETRIEVED_VIDEOS_LIMIT) - 1;
+            int firstPositionOfNextPage = lastPositionOfNextPage - (RETRIEVED_VIDEOS_LIMIT - 1);
+            if (firstPositionOfNextPage < curAdapterSize) {
+                lastPositionOfNextPage = Math.min(lastPositionOfNextPage, curAdapterSize);
+                for (int i = firstPositionOfNextPage; i <= lastPositionOfNextPage; i++) {
+                    videosAdapter.getCurrentExoPlayerManagerList().get(i).stopPlayer();
+                    Log.e(TAG, "Scroll backward - Stop video position " + i);
+                }
+                Toast.makeText(getContext(), "Scroll bacward - release page: " + (curVideosPage + 1)
+                        + ", from: " + firstPositionOfNextPage + " to: " + lastPositionOfNextPage, Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        private void reinitializePrevOfCurPage() {
+            Log.i(TAG, "onPageSelected: reinitialize videos");
+            int to = (RETRIEVED_VIDEOS_LIMIT * (curVideosPage - 1)) - 1;
+            int from = to - (RETRIEVED_VIDEOS_LIMIT - 1);
+            for (int i = from; i <= to; i++) {
+                videosAdapter.getCurrentExoPlayerManagerList().get(i).play();
+                videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer();
+                Log.e(TAG, "Scroll backward - reinitialize video position " + i);
+            }
+            Toast.makeText(getContext(), "Scroll backward - Reinitialize page: " + (curVideosPage - 1)
+                    + ", from: " + from + " to: " + to, Toast.LENGTH_SHORT).show();
         }
     }
 }

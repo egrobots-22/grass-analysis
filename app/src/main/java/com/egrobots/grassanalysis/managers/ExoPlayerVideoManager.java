@@ -40,6 +40,7 @@ public class ExoPlayerVideoManager {
     private boolean isRepeatEnabled = false;
     private VideoManagerCallback videoManagerCallback;
     private Context context;
+    private SimpleCache simpleCache;
 
     public void setExoPlayerCallback(VideoManagerCallback videoManagerCallback) {
         this.videoManagerCallback = videoManagerCallback;
@@ -47,21 +48,42 @@ public class ExoPlayerVideoManager {
 
     public void stopPlayer() {
         if (this.exoPlayer != null) {
+//            simpleCache.release();
             this.exoPlayer.stop();
+            this.exoPlayer.seekTo(0, 0);
         }
     }
 
     public void pausePlayer() {
         if (this.exoPlayer != null) {
             this.exoPlayer.pause();
+            this.exoPlayer.seekTo(0,0);
         }
     }
 
     public void initializeAudioExoPlayer(Context context, String audioUri, boolean playWhenReady) {
         this.context = context;
         exoPlayer = new ExoPlayer.Builder(context).build();
-        MediaItem mediaItem = MediaItem.fromUri(audioUri);
-        exoPlayer.setMediaItem(mediaItem);
+        LeastRecentlyUsedCacheEvictor evictor = new LeastRecentlyUsedCacheEvictor(100 * 1024 * 1024);
+        simpleCache = new SimpleCache(new File(context.getCacheDir(), UUID.randomUUID().toString())
+                , evictor
+                , new StandaloneDatabaseProvider(context)
+        );
+        CacheDataSource.Factory cacheDataSource = new CacheDataSource.Factory();
+        cacheDataSource.setCache(simpleCache);
+        DefaultDataSourceFactory defaultDataSourceFactory = new DefaultDataSourceFactory(context, Util.getUserAgent(context, context.getString(R.string.app_name)));
+        cacheDataSource.setUpstreamDataSourceFactory(defaultDataSourceFactory);
+        MediaSource mediaSource = null;
+        try {
+            MediaItem mediaItem = MediaItem.fromUri(audioUri);
+            mediaSource = new ProgressiveMediaSource.Factory(cacheDataSource)
+                    .createMediaSource(mediaItem);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        exoPlayer.setMediaSource(mediaSource);
+//        exoPlayer.setMediaItem(mediaItem);
         exoPlayer.setPlayWhenReady(playWhenReady);
         exoPlayer.seekTo(currentItem, playbackPosition);
         exoPlayer.setRepeatMode(Player.REPEAT_MODE_ONE);
@@ -77,7 +99,7 @@ public class ExoPlayerVideoManager {
         this.context = context;
         exoPlayer = new ExoPlayer.Builder(context).build();
         LeastRecentlyUsedCacheEvictor evictor = new LeastRecentlyUsedCacheEvictor(100 * 1024 * 1024);
-        SimpleCache simpleCache = new SimpleCache(new File(context.getCacheDir(), UUID.randomUUID().toString())
+        simpleCache = new SimpleCache(new File(context.getCacheDir(), UUID.randomUUID().toString())
                 , evictor
                 , new StandaloneDatabaseProvider(context)
         );
