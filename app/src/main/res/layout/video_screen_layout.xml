@@ -21,40 +21,39 @@
         android:id="@+id/toggle_buttons"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="72dp"
         android:orientation="vertical"
         android:theme="@style/Theme.MaterialComponents.Bridge"
+        app:singleSelection="true"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/add_question"
-        app:singleSelection="true">
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginBottom="16dp"
+        android:layout_marginTop="72dp"
+        android:layout_marginStart="16dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/like_button"
             style="@style/ToggleButtonWithIconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginBottom="16dp"
-            android:background="@color/black_overlay"
             android:text="0"
+            android:textStyle="bold"
             android:textColor="@color/white"
-            app:icon="@drawable/ic_like_black"
-            app:iconPadding="4dp"/>
+            app:icon="@drawable/icons8_thumbs_up_24"
+            app:iconPadding="4dp"
+            android:layout_gravity="center"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/dislike_button"
             style="@style/ToggleButtonWithIconOnly"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginBottom="8dp"
-            android:background="@color/black_overlay"
             android:text="0"
+            android:textStyle="bold"
             android:textColor="@color/white"
-            app:icon="@drawable/ic_dislike_black"
-            app:iconPadding="4dp"/>
+            app:icon="@drawable/icons8_thumbs_down_24"
+            app:iconPadding="4dp"
+            android:layout_gravity="center"/>
     </com.google.android.material.button.MaterialButtonToggleGroup>
-
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/audiosLayout"
