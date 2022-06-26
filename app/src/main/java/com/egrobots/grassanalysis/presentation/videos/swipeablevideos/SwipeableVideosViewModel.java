@@ -6,6 +6,7 @@ import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.LocalDataRepository;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionReactions;
 import com.egrobots.grassanalysis.utils.StateResource;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class SwipeableVideosViewModel extends ViewModel {
     private MediatorLiveData<List<QuestionItem>> videoUris = new MediatorLiveData<>();
     private MediatorLiveData<Boolean> existVideosState = new MediatorLiveData<>();
     private MediatorLiveData<StateResource> uploadAudioState = new MediatorLiveData<>();
+    private MediatorLiveData<QuestionItem> updatedQuestionItem = new MediatorLiveData<>();
 
     @Inject
     public SwipeableVideosViewModel(DatabaseRepository databaseRepository, LocalDataRepository localDataRepository) {
@@ -165,6 +167,34 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
+    public void updateReactions(QuestionReactions.ReactType type, String questionId, int newCount, boolean increase) {
+        databaseRepository.updateReactions(type, questionId, localDataRepository.getDeviceToken(), newCount, increase, localDataRepository.getDeviceToken())
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .toObservable()
+                .subscribe(new Observer<QuestionItem>() {
+                    @Override
+                    public void onSubscribe(Disposable d) {
+                        disposable.add(d);
+                    }
+
+                    @Override
+                    public void onNext(QuestionItem questionItem) {
+                        updatedQuestionItem.setValue(questionItem);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
+    }
+
     public MediatorLiveData<List<QuestionItem>> observeVideoUris() {
         return videoUris;
     }
@@ -175,5 +205,9 @@ public class SwipeableVideosViewModel extends ViewModel {
 
     public MediatorLiveData<Boolean> observeExistVideosState() {
         return existVideosState;
+    }
+
+    public MediatorLiveData<QuestionItem> observeQuestionItemUpdates() {
+        return updatedQuestionItem;
     }
 }

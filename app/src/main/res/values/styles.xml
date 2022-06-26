@@ -1,8 +1,8 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
         <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimary">@color/white</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="fontFamily">@font/arabic</item>
@@ -32,6 +32,18 @@
     <style name="ExoMediaButton.Next" tools:ignore="PrivateResource">
         <item name="android:layout_height">0dp</item>
         <item name="android:layout_width">0dp</item>
+    </style>
+
+    <style name="ToggleButtonWithIconOnly" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="iconPadding">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:minWidth">24dp</item>
+        <item name="android:minHeight">24dp</item>
+        <item name="iconTint">@color/toggle_icon_selector</item>
+        <item name="backgroundTint">@color/toggle_background_selector</item>
+        <item name="android:textSize">12sp</item>
     </style>
 
 </resources>

@@ -4,6 +4,7 @@ import android.net.Uri;
 
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionReactions;
 import com.egrobots.grassanalysis.datasource.remote.FirebaseDataSource;
 import com.google.firebase.storage.UploadTask;
 
@@ -54,5 +55,9 @@ public class DatabaseRepository {
 
     public Single<Boolean> isCurrentUserVideosFound(String deviceToken) {
         return firebaseDataSource.isCurrentUserVideosFound(deviceToken);
+    }
+
+    public Flowable<QuestionItem> updateReactions(QuestionReactions.ReactType type, String questionId, String userId, int newCount, boolean increase, String deviceToken) {
+        return firebaseDataSource.updateReactions(type, questionId, userId, newCount, increase, deviceToken);
     }
 }

@@ -7,6 +7,7 @@ import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import com.egrobots.grassanalysis.R;
@@ -15,6 +16,9 @@ import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.presentation.recordscreen.RecordScreenActivity2;
 import com.egrobots.grassanalysis.utils.Constants;
 import com.egrobots.grassanalysis.utils.OpenGalleryActivityResultCallback;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -25,6 +29,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.app.ActivityCompat;
 import androidx.viewpager2.widget.ViewPager2;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
 import dagger.android.support.DaggerAppCompatActivity;
@@ -40,16 +45,50 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
 
     private ActivityResultLauncher openGalleryLauncher;
 
+    @BindView(R.id.add_question)
+    ExtendedFloatingActionButton mAddQuestion;
+    @BindView(R.id.add_from_gallery_fab)
+    FloatingActionButton addFromGalleryFab;
+    @BindView(R.id.capture_video_fab)
+    FloatingActionButton captureVideoFab;
+    @BindView(R.id.capture_image_fab)
+    FloatingActionButton captureImageFab;
+    private boolean isAllFabsVisible;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_videos_tab);
         ButterKnife.bind(this);
+
+        addFromGalleryFab.setVisibility(View.GONE);
+        captureImageFab.setVisibility(View.GONE);
+        captureVideoFab.setVisibility(View.GONE);
+        isAllFabsVisible = false;
+        mAddQuestion.shrink();
+
         if (!allPermissionsGranted()) {
             ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS);
         }
         initView();
         registerForActivityResult();
+    }
+
+    @OnClick(R.id.add_question)
+    public void onAddQuestionClicked() {
+        if (!isAllFabsVisible) {
+            addFromGalleryFab.show();
+            captureImageFab.show();
+            captureVideoFab.show();
+            mAddQuestion.extend();
+            isAllFabsVisible = true;
+        } else {
+            addFromGalleryFab.hide();
+            captureImageFab.hide();
+            captureVideoFab.hide();
+            mAddQuestion.shrink();
+            isAllFabsVisible = false;
+        }
     }
 
     private boolean allPermissionsGranted() {
@@ -136,21 +175,21 @@ public class VideosTabActivity extends DaggerAppCompatActivity {
         tabLayoutMediator.attach();
     }
 
-    @OnClick(R.id.record_new_video)
+    @OnClick(R.id.capture_video_fab)
     public void onRecordVideoClicked() {
         Intent intent = new Intent(this, RecordScreenActivity2.class);
         intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.VIDEO);
         startActivity(intent);
     }
 
-    @OnClick(R.id.capture_new_image)
+    @OnClick(R.id.capture_image_fab)
     public void onCaptureImageClicked() {
         Intent intent = new Intent(this, RecordScreenActivity2.class);
         intent.putExtra(Constants.RECORD_TYPE, QuestionItem.RecordType.IMAGE);
         startActivity(intent);
     }
 
-    @OnClick(R.id.open_gallery)
+    @OnClick(R.id.add_from_gallery_fab)
     public void onOpenGalleryClicked() {
         Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
         photoPickerIntent.setType("image/*");

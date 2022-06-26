@@ -13,6 +13,10 @@ public class QuestionItem {
     private String type;
     private boolean justUploaded;
     private String flag;
+    private QuestionReactions LIKES;
+    private QuestionReactions DISLIKES;
+    private boolean likedByCurrentUser;
+    private boolean dislikedByCurrentUser;
 
     public String getId() {
         return id;
@@ -93,6 +97,38 @@ public class QuestionItem {
 
     public void setFlag(String flag) {
         this.flag = flag;
+    }
+
+    public QuestionReactions getLIKES() {
+        return LIKES;
+    }
+
+    public void setLIKES(QuestionReactions LIKES) {
+        this.LIKES = LIKES;
+    }
+
+    public QuestionReactions getDISLIKES() {
+        return DISLIKES;
+    }
+
+    public void setDISLIKES(QuestionReactions DISLIKES) {
+        this.DISLIKES = DISLIKES;
+    }
+
+    public boolean isLikedByCurrentUser() {
+        return likedByCurrentUser;
+    }
+
+    public void setLikedByCurrentUser(boolean likedByCurrentUser) {
+        this.likedByCurrentUser = likedByCurrentUser;
+    }
+
+    public boolean isDislikedByCurrentUser() {
+        return dislikedByCurrentUser;
+    }
+
+    public void setDislikedByCurrentUser(boolean dislikedByCurrentUser) {
+        this.dislikedByCurrentUser = dislikedByCurrentUser;
     }
 
     public enum RecordType {

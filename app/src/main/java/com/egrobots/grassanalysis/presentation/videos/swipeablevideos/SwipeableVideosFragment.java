@@ -20,6 +20,7 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionReactions;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.network.NetworkStateManager;
@@ -53,7 +54,10 @@ import static androidx.core.content.PermissionChecker.PERMISSION_GRANTED;
  * create an instance of this fragment.
  */
 public class SwipeableVideosFragment extends DaggerFragment
-        implements RecordAudioImpl.RecordAudioCallback, ExoPlayerVideoManager.VideoManagerCallback, AudioPlayer.AudioPlayCallback {
+        implements RecordAudioImpl.RecordAudioCallback,
+        ExoPlayerVideoManager.VideoManagerCallback,
+        AudioPlayer.AudioPlayCallback,
+        QuestionReactions.QuestionReactionsCallback {
     private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
     private static final int RETRIEVED_VIDEOS_LIMIT = 3;
@@ -85,6 +89,7 @@ public class SwipeableVideosFragment extends DaggerFragment
     private AudioPlayer audioPlayer;
     private String currentPlayingAnswerId;
     private int curVideosPage = 0;
+    private int updatedQuestionItemPosition;
 
     public SwipeableVideosFragment() {
         // Required empty public constructor
@@ -114,6 +119,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         observeUploadingVideo();
         videosAdapter.setRecordAudioCallback(this);
         videosAdapter.setAudioPlayCallback(this);
+        videosAdapter.setQuestionReactionsCallback(this);
         viewPagerVideos.setAdapter(videosAdapter);
         viewPagerVideos.registerOnPageChangeCallback(new OnVideoChangeCallback());
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
@@ -121,6 +127,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         observeNetworkConnection();
         observeVideosUris();
         observeUploadingRecordedAudio();
+        observeQuestionItemsUpdates();
         if (isCurrentUser) {
             swipeableVideosViewModel.isCurrentUserVideosFound();
         } else {
@@ -128,6 +135,12 @@ public class SwipeableVideosFragment extends DaggerFragment
         }
         swipeableVideosViewModel.getNextVideos(null, isCurrentUser, false);
         return view;
+    }
+
+    private void observeQuestionItemsUpdates() {
+        swipeableVideosViewModel.observeQuestionItemUpdates().observe(getViewLifecycleOwner(), questionItem -> {
+            videosAdapter.updateQuestionItem(questionItem, updatedQuestionItemPosition);
+        });
     }
 
     private void observeNetworkConnection() {
@@ -357,6 +370,12 @@ public class SwipeableVideosFragment extends DaggerFragment
         }
     }
 
+    @Override
+    public void updateReactions(QuestionReactions.ReactType type, String questionId, int newCount, boolean increase, int position) {
+        updatedQuestionItemPosition = position;
+        swipeableVideosViewModel.updateReactions(type, questionId, newCount, increase);
+    }
+
     class OnVideoChangeCallback extends ViewPager2.OnPageChangeCallback {
         @Override
         public void onPageSelected(int position) {
@@ -395,18 +414,13 @@ public class SwipeableVideosFragment extends DaggerFragment
                 reinitializeNextOfCurPage(curAdapterSize);
 
             } else if (prevPosition > position && curVideosPage > 2) { //scroll backward
-                Toast.makeText(getContext(), "Scroll backward", Toast.LENGTH_SHORT).show();
                 //decrease current page
                 if ((position + 1) % RETRIEVED_VIDEOS_LIMIT == 0) {
                     curVideosPage--;
-//                    int lastPositionOfPrevPage = (curVideosPage * RETRIEVED_VIDEOS_LIMIT) - 1;
-//                    if (position == lastPositionOfPrevPage) {
-                    Toast.makeText(getContext(), "enters previous page", Toast.LENGTH_SHORT).show();
                     //release cur page + 1 videos if found
                     releaseNextOfCurPage(curAdapterSize);
                     //enters prev page ==> reinitialize prev prev page
                     reinitializePrevOfCurPage();
-                    Toast.makeText(getContext(), "Current Page = " + curVideosPage, Toast.LENGTH_SHORT).show();
                 }
             }
             if (videosAdapter.getAudioAnswersRecyclerViewForQuestion(position) != null) {
@@ -424,20 +438,17 @@ public class SwipeableVideosFragment extends DaggerFragment
                 videosAdapter.getCurrentExoPlayerManagerList().get(i).stopPlayer();
                 Log.e(TAG, "Scroll forward - Stop video position " + i);
             }
-            Toast.makeText(getContext(), "Scroll forward - Release page: " + (curVideosPage - 1)
-                    + ", from: " + from + " to: " + to, Toast.LENGTH_SHORT).show();
         }
 
         private void reinitializeNextOfCurPage(int curAdapterSize) {
             int firstPositionOfNextPage = (curVideosPage + 1) * RETRIEVED_VIDEOS_LIMIT;
             if (firstPositionOfNextPage < curAdapterSize) {     //if not last page of retrieved videos
                 int lastPositionOfNextPage = firstPositionOfNextPage + (RETRIEVED_VIDEOS_LIMIT - 1);
+                lastPositionOfNextPage = Math.min(lastPositionOfNextPage, curAdapterSize-1);
                 for (int i = firstPositionOfNextPage; i <= lastPositionOfNextPage; i++) {
                     videosAdapter.getCurrentExoPlayerManagerList().get(i).play();
                     videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer();
                 }
-                Toast.makeText(getContext(), "Scroll forward - Reinitialize page: " + (curVideosPage + 1)
-                        + ", from: " + firstPositionOfNextPage + " to: " + lastPositionOfNextPage, Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -445,13 +456,11 @@ public class SwipeableVideosFragment extends DaggerFragment
             int lastPositionOfNextPage = ((curVideosPage + 2) * RETRIEVED_VIDEOS_LIMIT) - 1;
             int firstPositionOfNextPage = lastPositionOfNextPage - (RETRIEVED_VIDEOS_LIMIT - 1);
             if (firstPositionOfNextPage < curAdapterSize) {
-                lastPositionOfNextPage = Math.min(lastPositionOfNextPage, curAdapterSize);
+                lastPositionOfNextPage = Math.min(lastPositionOfNextPage, curAdapterSize-1);
                 for (int i = firstPositionOfNextPage; i <= lastPositionOfNextPage; i++) {
                     videosAdapter.getCurrentExoPlayerManagerList().get(i).stopPlayer();
                     Log.e(TAG, "Scroll backward - Stop video position " + i);
                 }
-                Toast.makeText(getContext(), "Scroll bacward - release page: " + (curVideosPage + 1)
-                        + ", from: " + firstPositionOfNextPage + " to: " + lastPositionOfNextPage, Toast.LENGTH_SHORT).show();
             }
         }
 
@@ -464,8 +473,6 @@ public class SwipeableVideosFragment extends DaggerFragment
                 videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer();
                 Log.e(TAG, "Scroll backward - reinitialize video position " + i);
             }
-            Toast.makeText(getContext(), "Scroll backward - Reinitialize page: " + (curVideosPage - 1)
-                    + ", from: " + from + " to: " + to, Toast.LENGTH_SHORT).show();
         }
     }
 }

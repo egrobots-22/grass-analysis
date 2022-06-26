@@ -5,7 +5,9 @@ import android.util.Log;
 
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionReactions;
 import com.egrobots.grassanalysis.utils.Constants;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -33,6 +35,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
+import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Single;
 
 public class FirebaseDataSource {
@@ -270,6 +273,16 @@ public class FirebaseDataSource {
                         public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
                             QuestionItem questionItem = questionSnapshot.getValue(QuestionItem.class);
                             questionItem.setId(questionSnapshot.getKey());
+                            if (questionItem.getLIKES() != null
+                                    && questionItem.getLIKES().getUsers() != null
+                                    && questionItem.getLIKES().getUsers().containsKey(deviceToken)) {
+                                questionItem.setLikedByCurrentUser(true);
+                            }
+                            if (questionItem.getDISLIKES() != null
+                                    && questionItem.getDISLIKES().getUsers() != null
+                                    && questionItem.getDISLIKES().getUsers().containsKey(deviceToken)) {
+                                questionItem.setDislikedByCurrentUser(true);
+                            }
                             if (isCurrentUser) {
                                 if (questionItem.getDeviceToken().equals(deviceToken)) {
                                     videoItems.add(questionItem);
@@ -284,7 +297,7 @@ public class FirebaseDataSource {
                             count++;
 
                             //if video is just uploaded, sent it
-                            if (isCurrentUser && questionItem.isJustUploaded()) {
+                            if (isCurrentUser && questionItem.isJustUploaded() && questionItem.getDeviceToken().equals(deviceToken)) {
                                 //set value of just uploaded to false, and save to database
                                 questionSnapshot.child("justUploaded")
                                         .getRef()
@@ -473,4 +486,61 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
+    public Flowable<QuestionItem> updateReactions(QuestionReactions.ReactType type, String questionId, String userId, int newCount, boolean increase, String deviceToken) {
+        return Flowable.create(emitter -> {
+            //update question item, retrieved
+            DatabaseReference questionReactRef = firebaseDatabase
+                    .getReference(Constants.QUESTIONS_NODE)
+                    .child(questionId)
+                    .child(type.toString());
+
+            DatabaseReference questionReactCountRef = questionReactRef.child("count");
+
+            //update count to the new value
+            questionReactRef.child("count").setValue(newCount).addOnCompleteListener(task -> {
+                //update users list
+                if (increase) {
+                    questionReactRef.child("users").child(userId).setValue(true);
+                } else {
+                    questionReactRef.child("users").child(userId).removeValue();
+                }
+            });
+        }, BackpressureStrategy.BUFFER);
+    }
+
+    public void addQuestionReactionListeners(String questionId) {
+        DatabaseReference questionLikesRef = firebaseDatabase
+                .getReference(Constants.QUESTIONS_NODE)
+                .child(questionId)
+                .child("LIKES");
+        questionLikesRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                snapshot.getValue();
+                Log.i(TAG, "onChildAdded: " + snapshot.getKey());
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+
+        DatabaseReference questionDisLikesRef = firebaseDatabase
+                .getReference(Constants.QUESTIONS_NODE)
+                .child(questionId)
+                .child("DISLIKES");
+        questionDisLikesRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                snapshot.getValue();
+                Log.i(TAG, "onChildAdded: " + snapshot.getKey());
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
+    }
 }

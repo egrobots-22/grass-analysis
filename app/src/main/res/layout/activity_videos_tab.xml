@@ -14,7 +14,7 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent">
 
         <com.google.android.material.tabs.TabLayout
             android:id="@+id/tabs"
@@ -25,41 +25,100 @@
             app:tabGravity="fill"
             app:tabTextColor="@color/white" />
 
-        <ImageButton
-            android:id="@+id/record_new_video"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_below="@id/tabs"
-            android:layout_alignParentEnd="true"
-            android:layout_margin="16dp"
-            android:background="@null"
-            android:elevation="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/video_icon_white2" />
+<!--        <ImageButton-->
+<!--            android:id="@+id/record_new_video"-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp"-->
+<!--            android:layout_below="@id/tabs"-->
+<!--            android:layout_alignParentEnd="true"-->
+<!--            android:layout_margin="16dp"-->
+<!--            android:background="@null"-->
+<!--            android:elevation="8dp"-->
+<!--            android:scaleType="fitCenter"-->
+<!--            android:src="@drawable/video_icon_white2" />-->
 
-        <ImageButton
-            android:id="@+id/capture_new_image"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_below="@id/record_new_video"
-            android:layout_alignParentEnd="true"
-            android:layout_margin="16dp"
-            android:background="@null"
-            android:elevation="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/capture_image_white" />
+<!--        <ImageButton-->
+<!--            android:id="@+id/capture_new_image"-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp"-->
+<!--            android:layout_below="@id/record_new_video"-->
+<!--            android:layout_alignParentEnd="true"-->
+<!--            android:layout_margin="16dp"-->
+<!--            android:background="@null"-->
+<!--            android:elevation="8dp"-->
+<!--            android:scaleType="fitCenter"-->
+<!--            android:src="@drawable/capture_image_white" />-->
 
-        <ImageButton
-            android:id="@+id/open_gallery"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_below="@id/capture_new_image"
-            android:layout_alignParentEnd="true"
-            android:layout_margin="16dp"
-            android:background="@null"
-            android:elevation="8dp"
-            android:scaleType="fitCenter"
-            android:src="@drawable/gallery_white_jpg" />
+<!--        <ImageButton-->
+<!--            android:id="@+id/open_gallery"-->
+<!--            android:layout_width="40dp"-->
+<!--            android:layout_height="40dp"-->
+<!--            android:layout_below="@id/capture_new_image"-->
+<!--            android:layout_alignParentEnd="true"-->
+<!--            android:layout_margin="16dp"-->
+<!--            android:background="@null"-->
+<!--            android:elevation="8dp"-->
+<!--            android:scaleType="fitCenter"-->
+<!--            android:src="@drawable/gallery_white_jpg" />-->
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/add_questions_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="72dp"
+            android:layout_below="@id/tabs">
+
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/add_question"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="8dp"
+                android:backgroundTint="@color/colorAccent"
+                android:foregroundTint="@color/dark_gray"
+                android:text="أضف سؤال"
+                android:theme="@style/Theme.MaterialComponents.Light"
+                app:icon="@drawable/ic_add_image"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/add_from_gallery_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="@color/white"
+                app:fabSize="normal"
+                app:layout_constraintEnd_toEndOf="@+id/add_question"
+                app:layout_constraintTop_toBottomOf="@+id/add_question"
+                app:srcCompat="@drawable/gallery_white_jpg" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/capture_video_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="@color/white"
+                app:fabSize="normal"
+                app:layout_constraintEnd_toEndOf="@+id/add_from_gallery_fab"
+                app:layout_constraintStart_toStartOf="@+id/add_from_gallery_fab"
+                app:layout_constraintTop_toBottomOf="@+id/add_from_gallery_fab"
+                app:srcCompat="@drawable/video_icon_white2" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/capture_image_fab"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="@color/white"
+                app:fabSize="normal"
+                app:layout_constraintEnd_toEndOf="@+id/capture_video_fab"
+                app:layout_constraintStart_toStartOf="@+id/capture_video_fab"
+                app:layout_constraintTop_toBottomOf="@+id/capture_video_fab"
+                app:srcCompat="@drawable/capture_image_white" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </RelativeLayout>
 

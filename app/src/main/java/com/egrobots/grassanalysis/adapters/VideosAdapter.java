@@ -13,10 +13,13 @@ import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.data.model.QuestionReactions;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
 import com.egrobots.grassanalysis.utils.SwipeLayoutToHideAndShow;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +39,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public List<QuestionItem> questionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private AudioPlayer.AudioPlayCallback audioPlayCallback;
+    private QuestionReactions.QuestionReactionsCallback questionReactionsCallback;
     private DatabaseRepository databaseRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();
     private HashMap<String, AudioAdapters> audioAnswersAdaptersForQuestionMap = new HashMap<>();
@@ -55,6 +59,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     @Override
     public void onBindViewHolder(@NonNull VideoViewHolder holder, int position) {
         QuestionItem questionItem = questionItems.get(position);
+        holder.setQuestion(questionItem, position);
         if (questionItem.getType() == null || questionItem.getType().contains("mp4")) {
             holder.exoThumbnail.setVisibility(View.GONE);
         } else {
@@ -65,14 +70,22 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         }
         managers.get(position).initializePlayer(holder.playerView);
 
+        //set likes & dislikes count
+        holder.toggleLikeDislikeButtonsGroup.clearOnButtonCheckedListeners();
+        holder.likeButton.setText(String.valueOf(questionItem.getLIKES() == null ? 0 : questionItem.getLIKES().getCount()));
+        holder.dislikeButton.setText(String.valueOf(questionItem.getDISLIKES() == null ? 0 : questionItem.getDISLIKES().getCount()));
+        holder.likeButton.setChecked(questionItem.isLikedByCurrentUser());
+        holder.dislikeButton.setChecked(questionItem.isDislikedByCurrentUser());
+        holder.toggleLikeDislikeButtonsGroup.addOnButtonCheckedListener(holder);
+
         //get audio files for current video question
         holder.setRecordAudioView(questionItem);
         holder.setupAudioFilesRecyclerView(questionItem);
 
         SwipeLayoutToHideAndShow swipeLayout = new SwipeLayoutToHideAndShow();
         swipeLayout.initialize(holder.audiosLayout,
-                        holder.audioFilesRecyclerView,
-                        Arrays.asList(SwipeLayoutToHideAndShow.SwipeDirection.leftToRight,
+                holder.audioFilesRecyclerView,
+                Arrays.asList(SwipeLayoutToHideAndShow.SwipeDirection.leftToRight,
                         SwipeLayoutToHideAndShow.SwipeDirection.rightToLeft));
     }
 
@@ -111,6 +124,11 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         notifyDataSetChanged();
     }
 
+    public void updateQuestionItem(QuestionItem questionItem, int updatedQuestionItemPosition) {
+        questionItems.set(updatedQuestionItemPosition, questionItem);
+        notifyItemChanged(updatedQuestionItemPosition);
+    }
+
     public ExoPlayerVideoManager getCurrentExoPlayerManager(int position) {
         return managers.get(position);
     }
@@ -127,6 +145,10 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         this.audioPlayCallback = audioPlayCallback;
     }
 
+    public void setQuestionReactionsCallback(QuestionReactions.QuestionReactionsCallback questionReactionsCallback) {
+        this.questionReactionsCallback = questionReactionsCallback;
+    }
+
     public void loadAddingNewAudioAnswer(String id) {
         audioAnswersAdaptersForQuestionMap.get(id).addNewAudio(null);
     }
@@ -135,7 +157,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         return audioAnswersRecyclerForQuestionMap.get(position);
     }
 
-    class VideoViewHolder extends RecyclerView.ViewHolder {
+    class VideoViewHolder extends RecyclerView.ViewHolder implements MaterialButtonToggleGroup.OnButtonCheckedListener {
 
         @BindView(R.id.audiosLayout)
         ConstraintLayout audiosLayout;
@@ -151,11 +173,83 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         PlayerView playerView;
         @BindView(R.id.exo_thumbnail)
         ImageView exoThumbnail;
+        @BindView(R.id.toggle_buttons)
+        MaterialButtonToggleGroup toggleLikeDislikeButtonsGroup;
+        @BindView(R.id.like_button)
+        MaterialButton likeButton;
+        @BindView(R.id.dislike_button)
+        MaterialButton dislikeButton;
         AudioAdapters audioAdapters;
+        private QuestionItem questionItem;
+        private int currentPosition;
 
         public VideoViewHolder(@NonNull View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
+        }
+
+        private void decreaseDislikesCount() {
+            String dislikes = dislikeButton.getText().toString().trim();
+            int dislikesCount = dislikes.equals("0") ? 0 : Integer.parseInt(dislikes);
+            dislikeButton.setText(String.valueOf(--dislikesCount));
+            if (questionItem.getDISLIKES() == null) {
+                QuestionReactions dislikesReact = new QuestionReactions();
+                dislikesReact.setCount(dislikesCount);
+                questionItem.setDISLIKES(dislikesReact);
+            } else {
+                questionItem.getDISLIKES().setCount(dislikesCount);
+            }
+            questionItem.setDislikedByCurrentUser(false);
+            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, false, currentPosition);
+            notifyItemChanged(currentPosition, questionItem);
+        }
+
+        private void decreaseLikesCount() {
+            String likes = likeButton.getText().toString().trim();
+            int likesCount = likes.equals("0") ? 0 : Integer.parseInt(likes);
+            likeButton.setText(String.valueOf(--likesCount));
+            if (questionItem.getLIKES() == null) {
+                QuestionReactions likesReact = new QuestionReactions();
+                likesReact.setCount(likesCount);
+                questionItem.setLIKES(likesReact);
+            } else {
+                questionItem.getLIKES().setCount(likesCount);
+            }
+            questionItem.setLikedByCurrentUser(false);
+            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.LIKES, questionItem.getId(), likesCount, false, currentPosition);
+            notifyItemChanged(currentPosition, questionItem);
+        }
+
+        private void increaseDislikesCount() {
+            String dislikes = dislikeButton.getText().toString().trim();
+            int dislikesCount = dislikes.equals("0") ? 0 : Integer.parseInt(dislikes);
+            dislikeButton.setText(String.valueOf(++dislikesCount));
+            if (questionItem.getDISLIKES() == null) {
+                QuestionReactions dislikesReact = new QuestionReactions();
+                dislikesReact.setCount(dislikesCount);
+                questionItem.setDISLIKES(dislikesReact);
+            } else {
+                questionItem.getDISLIKES().setCount(dislikesCount);
+            }
+            questionItem.setDislikedByCurrentUser(true);
+            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, true, currentPosition);
+            notifyItemChanged(currentPosition, questionItem);
+        }
+
+        private void increaseLikesCount() {
+            String likes = likeButton.getText().toString().trim();
+            int likesCount = likes.equals("0") ? 0 : Integer.parseInt(likes);
+            likeButton.setText(String.valueOf(++likesCount));
+            if (questionItem.getLIKES() == null) {
+                QuestionReactions likesReact = new QuestionReactions();
+                likesReact.setCount(likesCount);
+                questionItem.setLIKES(likesReact);
+            } else {
+                questionItem.getLIKES().setCount(likesCount);
+            }
+            questionItem.setLikedByCurrentUser(true);
+            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.LIKES, questionItem.getId(), likesCount, true, currentPosition);
+            notifyItemChanged(currentPosition, questionItem);
         }
 
         private void setRecordAudioView(QuestionItem questionItem) {
@@ -170,6 +264,34 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             audioAdapters.retrieveAudios(questionItem);
             audioAnswersAdaptersForQuestionMap.put(questionItem.getId(), audioAdapters);
             audioAnswersRecyclerForQuestionMap.put(getAbsoluteAdapterPosition(), audioFilesRecyclerView);
+        }
+
+        @Override
+        public void onButtonChecked(MaterialButtonToggleGroup group, int checkedId, boolean isChecked) {
+            if (isChecked) {
+                switch (checkedId) {
+                    case R.id.like_button:
+                        increaseLikesCount();
+                        break;
+                    case R.id.dislike_button:
+                        increaseDislikesCount();
+                        break;
+                }
+            } else {
+                switch (checkedId) {
+                    case R.id.like_button:
+                        decreaseLikesCount();
+                        break;
+                    case R.id.dislike_button:
+                        decreaseDislikesCount();
+                        break;
+                }
+            }
+        }
+
+        public void setQuestion(QuestionItem questionItem, int position) {
+            currentPosition = position;
+            this.questionItem = questionItem;
         }
     }
 
