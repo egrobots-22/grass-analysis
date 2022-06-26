@@ -3,7 +3,7 @@ package com.egrobots.grassanalysis.data.model;
 import java.util.HashMap;
 import java.util.List;
 
-public class QuestionReactions {
+public class Reactions {
 
     private int count;
     private HashMap<String, Boolean> users;

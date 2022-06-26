@@ -6,7 +6,7 @@ import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.LocalDataRepository;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
-import com.egrobots.grassanalysis.data.model.QuestionReactions;
+import com.egrobots.grassanalysis.data.model.Reactions;
 import com.egrobots.grassanalysis.utils.StateResource;
 
 import java.util.List;
@@ -167,7 +167,7 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public void updateReactions(QuestionReactions.ReactType type, String questionId, int newCount, boolean increase) {
+    public void updateReactions(Reactions.ReactType type, String questionId, int newCount, boolean increase) {
         databaseRepository.updateReactions(type, questionId, localDataRepository.getDeviceToken(), newCount, increase, localDataRepository.getDeviceToken())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

@@ -13,7 +13,7 @@ import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
-import com.egrobots.grassanalysis.data.model.QuestionReactions;
+import com.egrobots.grassanalysis.data.model.Reactions;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.utils.RecordAudioImpl;
@@ -39,7 +39,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public List<QuestionItem> questionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private AudioPlayer.AudioPlayCallback audioPlayCallback;
-    private QuestionReactions.QuestionReactionsCallback questionReactionsCallback;
+    private Reactions.QuestionReactionsCallback questionReactionsCallback;
     private DatabaseRepository databaseRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();
     private HashMap<String, AudioAdapters> audioAnswersAdaptersForQuestionMap = new HashMap<>();
@@ -145,7 +145,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         this.audioPlayCallback = audioPlayCallback;
     }
 
-    public void setQuestionReactionsCallback(QuestionReactions.QuestionReactionsCallback questionReactionsCallback) {
+    public void setQuestionReactionsCallback(Reactions.QuestionReactionsCallback questionReactionsCallback) {
         this.questionReactionsCallback = questionReactionsCallback;
     }
 
@@ -193,14 +193,14 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             int dislikesCount = dislikes.equals("0") ? 0 : Integer.parseInt(dislikes);
             dislikeButton.setText(String.valueOf(--dislikesCount));
             if (questionItem.getDISLIKES() == null) {
-                QuestionReactions dislikesReact = new QuestionReactions();
+                Reactions dislikesReact = new Reactions();
                 dislikesReact.setCount(dislikesCount);
                 questionItem.setDISLIKES(dislikesReact);
             } else {
                 questionItem.getDISLIKES().setCount(dislikesCount);
             }
             questionItem.setDislikedByCurrentUser(false);
-            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, false, currentPosition);
+            questionReactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, false, currentPosition);
             notifyItemChanged(currentPosition, questionItem);
         }
 
@@ -209,14 +209,14 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             int likesCount = likes.equals("0") ? 0 : Integer.parseInt(likes);
             likeButton.setText(String.valueOf(--likesCount));
             if (questionItem.getLIKES() == null) {
-                QuestionReactions likesReact = new QuestionReactions();
+                Reactions likesReact = new Reactions();
                 likesReact.setCount(likesCount);
                 questionItem.setLIKES(likesReact);
             } else {
                 questionItem.getLIKES().setCount(likesCount);
             }
             questionItem.setLikedByCurrentUser(false);
-            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.LIKES, questionItem.getId(), likesCount, false, currentPosition);
+            questionReactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), likesCount, false, currentPosition);
             notifyItemChanged(currentPosition, questionItem);
         }
 
@@ -225,14 +225,14 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             int dislikesCount = dislikes.equals("0") ? 0 : Integer.parseInt(dislikes);
             dislikeButton.setText(String.valueOf(++dislikesCount));
             if (questionItem.getDISLIKES() == null) {
-                QuestionReactions dislikesReact = new QuestionReactions();
+                Reactions dislikesReact = new Reactions();
                 dislikesReact.setCount(dislikesCount);
                 questionItem.setDISLIKES(dislikesReact);
             } else {
                 questionItem.getDISLIKES().setCount(dislikesCount);
             }
             questionItem.setDislikedByCurrentUser(true);
-            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, true, currentPosition);
+            questionReactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, true, currentPosition);
             notifyItemChanged(currentPosition, questionItem);
         }
 
@@ -241,14 +241,14 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
             int likesCount = likes.equals("0") ? 0 : Integer.parseInt(likes);
             likeButton.setText(String.valueOf(++likesCount));
             if (questionItem.getLIKES() == null) {
-                QuestionReactions likesReact = new QuestionReactions();
+                Reactions likesReact = new Reactions();
                 likesReact.setCount(likesCount);
                 questionItem.setLIKES(likesReact);
             } else {
                 questionItem.getLIKES().setCount(likesCount);
             }
             questionItem.setLikedByCurrentUser(true);
-            questionReactionsCallback.updateReactions(QuestionReactions.ReactType.LIKES, questionItem.getId(), likesCount, true, currentPosition);
+            questionReactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), likesCount, true, currentPosition);
             notifyItemChanged(currentPosition, questionItem);
         }
 

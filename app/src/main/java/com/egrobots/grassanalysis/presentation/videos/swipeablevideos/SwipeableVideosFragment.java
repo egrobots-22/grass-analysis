@@ -20,7 +20,7 @@ import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.adapters.VideosAdapter;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
-import com.egrobots.grassanalysis.data.model.QuestionReactions;
+import com.egrobots.grassanalysis.data.model.Reactions;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.managers.ExoPlayerVideoManager;
 import com.egrobots.grassanalysis.network.NetworkStateManager;
@@ -57,7 +57,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         implements RecordAudioImpl.RecordAudioCallback,
         ExoPlayerVideoManager.VideoManagerCallback,
         AudioPlayer.AudioPlayCallback,
-        QuestionReactions.QuestionReactionsCallback {
+        Reactions.QuestionReactionsCallback {
     private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
     private static final int RETRIEVED_VIDEOS_LIMIT = 3;
@@ -371,7 +371,7 @@ public class SwipeableVideosFragment extends DaggerFragment
     }
 
     @Override
-    public void updateReactions(QuestionReactions.ReactType type, String questionId, int newCount, boolean increase, int position) {
+    public void updateReactions(Reactions.ReactType type, String questionId, int newCount, boolean increase, int position) {
         updatedQuestionItemPosition = position;
         swipeableVideosViewModel.updateReactions(type, questionId, newCount, increase);
     }

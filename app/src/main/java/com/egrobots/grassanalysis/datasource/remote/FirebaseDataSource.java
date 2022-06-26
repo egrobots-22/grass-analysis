@@ -5,9 +5,8 @@ import android.util.Log;
 
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
-import com.egrobots.grassanalysis.data.model.QuestionReactions;
+import com.egrobots.grassanalysis.data.model.Reactions;
 import com.egrobots.grassanalysis.utils.Constants;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -35,7 +34,6 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableEmitter;
-import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.Single;
 
 public class FirebaseDataSource {
@@ -486,7 +484,7 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Flowable<QuestionItem> updateReactions(QuestionReactions.ReactType type, String questionId, String userId, int newCount, boolean increase, String deviceToken) {
+    public Flowable<QuestionItem> updateReactions(Reactions.ReactType type, String questionId, String userId, int newCount, boolean increase, String deviceToken) {
         return Flowable.create(emitter -> {
             //update question item, retrieved
             DatabaseReference questionReactRef = firebaseDatabase

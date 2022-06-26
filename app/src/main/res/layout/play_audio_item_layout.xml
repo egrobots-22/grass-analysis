@@ -85,6 +85,7 @@
         android:layout_gravity="center"
         android:layout_weight="1"
         android:text="00:00"
+        android:textSize="11sp"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="@id/seek_bar"
         app:layout_constraintStart_toEndOf="@id/seek_bar"
@@ -98,9 +99,55 @@
         android:layout_marginStart="8dp"
         android:layout_weight="1"
         android:text="00:05"
+        android:textSize="11sp"
         android:textColor="@color/white"
         app:layout_constraintBottom_toBottomOf="@id/seek_bar"
         app:layout_constraintStart_toEndOf="@id/audio_progress_textview"
         app:layout_constraintTop_toTopOf="@id/seek_bar" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/audio_reactions_buttons"
+        android:layout_width="wrap_content"
+        android:layout_height="26dp"
+        android:background="@drawable/cornered_black_bg"
+        android:orientation="horizontal"
+        android:theme="@style/Theme.MaterialComponents.Bridge"
+        app:layout_constraintBottom_toBottomOf="@id/audioNameTextView"
+        app:layout_constraintEnd_toEndOf="@id/audio_length_textview"
+        app:layout_constraintTop_toBottomOf="@+id/audioNameTextView"
+        app:layout_constraintStart_toStartOf="@id/audio_progress_textview"
+        app:singleSelection="true">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/like_button"
+            style="@style/ToggleButtonWithIconOnly"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="0"
+            android:textColor="@color/white"
+            android:textSize="8sp"
+            app:icon="@drawable/icons8_thumbs_up_24"
+            app:iconGravity="start"
+            app:iconPadding="4dp"
+            app:iconSize="12dp"
+            android:checkable="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/dislike_button"
+            style="@style/ToggleButtonWithIconOnly"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="0"
+            android:textColor="@color/white"
+            android:textSize="8sp"
+            app:icon="@drawable/icons8_thumbs_down_24"
+            app:iconGravity="start"
+            app:iconPadding="4dp"
+            app:iconSize="12dp"
+            android:checkable="false"/>
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

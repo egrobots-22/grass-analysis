@@ -13,8 +13,8 @@ public class QuestionItem {
     private String type;
     private boolean justUploaded;
     private String flag;
-    private QuestionReactions LIKES;
-    private QuestionReactions DISLIKES;
+    private Reactions LIKES;
+    private Reactions DISLIKES;
     private boolean likedByCurrentUser;
     private boolean dislikedByCurrentUser;
 
@@ -99,19 +99,19 @@ public class QuestionItem {
         this.flag = flag;
     }
 
-    public QuestionReactions getLIKES() {
+    public Reactions getLIKES() {
         return LIKES;
     }
 
-    public void setLIKES(QuestionReactions LIKES) {
+    public void setLIKES(Reactions LIKES) {
         this.LIKES = LIKES;
     }
 
-    public QuestionReactions getDISLIKES() {
+    public Reactions getDISLIKES() {
         return DISLIKES;
     }
 
-    public void setDISLIKES(QuestionReactions DISLIKES) {
+    public void setDISLIKES(Reactions DISLIKES) {
         this.DISLIKES = DISLIKES;
     }
 
