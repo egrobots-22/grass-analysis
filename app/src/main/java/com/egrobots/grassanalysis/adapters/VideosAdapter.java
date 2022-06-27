@@ -12,6 +12,7 @@ import com.devlomi.record_view.RecordButton;
 import com.devlomi.record_view.RecordView;
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
+import com.egrobots.grassanalysis.data.LocalDataRepository;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
 import com.egrobots.grassanalysis.data.model.Reactions;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
@@ -39,14 +40,16 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
     public List<QuestionItem> questionItems = new ArrayList<>();
     private RecordAudioImpl.RecordAudioCallback recordAudioCallback;
     private AudioPlayer.AudioPlayCallback audioPlayCallback;
-    private Reactions.QuestionReactionsCallback questionReactionsCallback;
+    private Reactions.ReactionsCallback reactionsCallback;
     private DatabaseRepository databaseRepository;
+    private LocalDataRepository localDataRepository;
     private List<ExoPlayerVideoManager> managers = new ArrayList<>();
     private HashMap<String, AudioAdapters> audioAnswersAdaptersForQuestionMap = new HashMap<>();
     private HashMap<Integer, RecyclerView> audioAnswersRecyclerForQuestionMap = new HashMap<>();
 
-    public VideosAdapter(DatabaseRepository databaseRepository) {
+    public VideosAdapter(DatabaseRepository databaseRepository, LocalDataRepository localDataRepository) {
         this.databaseRepository = databaseRepository;
+        this.localDataRepository = localDataRepository;
     }
 
     @NonNull
@@ -145,8 +148,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         this.audioPlayCallback = audioPlayCallback;
     }
 
-    public void setQuestionReactionsCallback(Reactions.QuestionReactionsCallback questionReactionsCallback) {
-        this.questionReactionsCallback = questionReactionsCallback;
+    public void setReactionsCallback(Reactions.ReactionsCallback reactionsCallback) {
+        this.reactionsCallback = reactionsCallback;
     }
 
     public void loadAddingNewAudioAnswer(String id) {
@@ -200,7 +203,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 questionItem.getDISLIKES().setCount(dislikesCount);
             }
             questionItem.setDislikedByCurrentUser(false);
-            questionReactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, false, currentPosition);
+            reactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), null, dislikesCount, false, currentPosition);
+            questionItems.set(currentPosition, questionItem);
             notifyItemChanged(currentPosition, questionItem);
         }
 
@@ -216,7 +220,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 questionItem.getLIKES().setCount(likesCount);
             }
             questionItem.setLikedByCurrentUser(false);
-            questionReactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), likesCount, false, currentPosition);
+            reactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), null, likesCount, false, currentPosition);
+            questionItems.set(currentPosition, questionItem);
             notifyItemChanged(currentPosition, questionItem);
         }
 
@@ -232,7 +237,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 questionItem.getDISLIKES().setCount(dislikesCount);
             }
             questionItem.setDislikedByCurrentUser(true);
-            questionReactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), dislikesCount, true, currentPosition);
+            reactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), null, dislikesCount, true, currentPosition);
+            questionItems.set(currentPosition, questionItem);
             notifyItemChanged(currentPosition, questionItem);
         }
 
@@ -248,7 +254,8 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
                 questionItem.getLIKES().setCount(likesCount);
             }
             questionItem.setLikedByCurrentUser(true);
-            questionReactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), likesCount, true, currentPosition);
+            reactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), null, likesCount, true, currentPosition);
+            questionItems.set(currentPosition, questionItem);
             notifyItemChanged(currentPosition, questionItem);
         }
 
@@ -258,7 +265,7 @@ public class VideosAdapter extends RecyclerView.Adapter<VideosAdapter.VideoViewH
         }
 
         private void setupAudioFilesRecyclerView(QuestionItem questionItem) {
-            audioAdapters = new AudioAdapters(databaseRepository, audioPlayCallback);
+            audioAdapters = new AudioAdapters(databaseRepository, localDataRepository, audioPlayCallback, reactionsCallback);
             audioFilesRecyclerView.setAdapter(audioAdapters);
             audioFilesRecyclerView.setLayoutManager(new LinearLayoutManager(itemView.getContext()));
             audioAdapters.retrieveAudios(questionItem);

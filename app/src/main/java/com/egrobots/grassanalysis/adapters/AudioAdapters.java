@@ -12,10 +12,14 @@ import android.widget.TextView;
 
 import com.egrobots.grassanalysis.R;
 import com.egrobots.grassanalysis.data.DatabaseRepository;
+import com.egrobots.grassanalysis.data.LocalDataRepository;
 import com.egrobots.grassanalysis.data.model.AudioAnswer;
 import com.egrobots.grassanalysis.data.model.QuestionItem;
+import com.egrobots.grassanalysis.data.model.Reactions;
 import com.egrobots.grassanalysis.managers.AudioPlayer;
 import com.egrobots.grassanalysis.utils.Utils;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,14 +42,22 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
     public static final int TIME_UNIT = 500;
 
     private AudioPlayer.AudioPlayCallback audioPlayCallback;
+    private Reactions.ReactionsCallback reactionsCallback;
     private List<AudioAnswer> audioAnswers = new ArrayList<>();
     private DatabaseRepository databaseRepository;
+    private LocalDataRepository localDataRepository;
     private CompositeDisposable disposable = new CompositeDisposable();
     private boolean isJustUploaded;
+    private QuestionItem questionItem;
 
-    public AudioAdapters(DatabaseRepository databaseRepository, AudioPlayer.AudioPlayCallback audioPlayCallback) {
+    public AudioAdapters(DatabaseRepository databaseRepository,
+                         LocalDataRepository localDataRepository,
+                         AudioPlayer.AudioPlayCallback audioPlayCallback,
+                         Reactions.ReactionsCallback reactionsCallback) {
         this.databaseRepository = databaseRepository;
+        this.localDataRepository = localDataRepository;
         this.audioPlayCallback = audioPlayCallback;
+        this.reactionsCallback = reactionsCallback;
     }
 
     @NonNull
@@ -60,6 +72,7 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         ExecutorService executorService = Executors.newSingleThreadExecutor();
         executorService.submit(() -> {
             AudioAnswer audioAnswer = audioAnswers.get(position);
+            holder.setAudioAnswer(audioAnswer, position);
             if (audioAnswer == null) {
                 holder.progressBar.setVisibility(View.VISIBLE);
                 holder.audioNameTextView.setVisibility(View.GONE);
@@ -76,6 +89,14 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
                 holder.setAudioUri(audioAnswer.getId(), audioAnswer.getAudioUri());
                 holder.seekBar.setMax(audioAnswer.getAudioLength()/TIME_UNIT);
             }
+            //set likes & dislikes count
+            holder.reactionsToggleGroup.clearOnButtonCheckedListeners();
+            holder.likeButton.setText(String.valueOf(audioAnswer.getLIKES() == null ? 0 : audioAnswer.getLIKES().getCount()));
+            holder.dislikeButton.setText(String.valueOf(audioAnswer.getDISLIKES() == null ? 0 : audioAnswer.getDISLIKES().getCount()));
+            holder.likeButton.setChecked(audioAnswer.isLikedByCurrentUser());
+            holder.dislikeButton.setChecked(audioAnswer.isDislikedByCurrentUser());
+            holder.reactionsToggleGroup.addOnButtonCheckedListener(holder);
+
             executorService.shutdown();
         });
     }
@@ -101,7 +122,8 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
     }
 
     public void retrieveAudios(QuestionItem questionItem) {
-        databaseRepository.getRecordedAudiosForQuestion(questionItem)
+        this.questionItem = questionItem;
+        databaseRepository.getRecordedAudiosForQuestion(questionItem, localDataRepository.getDeviceToken())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()
@@ -128,7 +150,7 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
                 });
     }
 
-    class AudioViewHolder extends RecyclerView.ViewHolder implements AudioPlayer.AudioPlayCallback {
+    class AudioViewHolder extends RecyclerView.ViewHolder implements AudioPlayer.AudioPlayCallback, MaterialButtonToggleGroup.OnButtonCheckedListener {
         private AudioPlayer audioPlayer;
 
         @BindView(R.id.playButton)
@@ -145,9 +167,17 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
         SeekBar seekBar;
         @BindView(R.id.audio_progress_textview)
         TextView audioProgressTextView;
+        @BindView(R.id.audio_reactions_buttons)
+        MaterialButtonToggleGroup reactionsToggleGroup;
+        @BindView(R.id.like_button)
+        MaterialButton likeButton;
+        @BindView(R.id.dislike_button)
+        MaterialButton dislikeButton;
 
         private Handler handler = new Handler();
         private Runnable mUpdateTimeTask;
+        private int currentPosition;
+        private AudioAnswer audioAnswer;
 
         public AudioViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -204,6 +234,106 @@ public class AudioAdapters extends RecyclerView.Adapter<AudioAdapters.AudioViewH
             handler.removeCallbacks(mUpdateTimeTask);
             audioProgressTextView.setText("00:00");
             audioPlayCallback.onFinishPlayingAnswerAudio();
+        }
+
+        private void decreaseDislikesCount() {
+            String dislikes = dislikeButton.getText().toString().trim();
+            int dislikesCount = dislikes.equals("0") ? 0 : Integer.parseInt(dislikes);
+            dislikeButton.setText(String.valueOf(--dislikesCount));
+            if (audioAnswer.getDISLIKES() == null) {
+                Reactions dislikesReact = new Reactions();
+                dislikesReact.setCount(dislikesCount);
+                audioAnswer.setDISLIKES(dislikesReact);
+            } else {
+                audioAnswer.getDISLIKES().setCount(dislikesCount);
+            }
+            audioAnswer.setDislikedByCurrentUser(false);
+            reactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), audioAnswer.getId(),
+                    dislikesCount, false, currentPosition);
+            audioAnswers.set(currentPosition, audioAnswer);
+            notifyItemChanged(currentPosition, audioAnswer);
+        }
+
+        private void decreaseLikesCount() {
+            String likes = likeButton.getText().toString().trim();
+            int likesCount = likes.equals("0") ? 0 : Integer.parseInt(likes);
+            likeButton.setText(String.valueOf(--likesCount));
+            if (audioAnswer.getLIKES() == null) {
+                Reactions likesReact = new Reactions();
+                likesReact.setCount(likesCount);
+                audioAnswer.setLIKES(likesReact);
+            } else {
+                audioAnswer.getLIKES().setCount(likesCount);
+            }
+            audioAnswer.setLikedByCurrentUser(false);
+            reactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), audioAnswer.getId(),
+                    likesCount, false, currentPosition);
+            audioAnswers.set(currentPosition, audioAnswer);
+            notifyItemChanged(currentPosition, audioAnswer);
+        }
+
+        private void increaseDislikesCount() {
+            String dislikes = dislikeButton.getText().toString().trim();
+            int dislikesCount = dislikes.equals("0") ? 0 : Integer.parseInt(dislikes);
+            dislikeButton.setText(String.valueOf(++dislikesCount));
+            if (audioAnswer.getDISLIKES() == null) {
+                Reactions dislikesReact = new Reactions();
+                dislikesReact.setCount(dislikesCount);
+                audioAnswer.setDISLIKES(dislikesReact);
+            } else {
+                audioAnswer.getDISLIKES().setCount(dislikesCount);
+            }
+            audioAnswer.setDislikedByCurrentUser(true);
+            reactionsCallback.updateReactions(Reactions.ReactType.DISLIKES, questionItem.getId(), audioAnswer.getId(),
+                    dislikesCount, true, currentPosition);
+            audioAnswers.set(currentPosition, audioAnswer);
+            notifyItemChanged(currentPosition, audioAnswer);
+        }
+
+        private void increaseLikesCount() {
+            String likes = likeButton.getText().toString().trim();
+            int likesCount = likes.equals("0") ? 0 : Integer.parseInt(likes);
+            likeButton.setText(String.valueOf(++likesCount));
+            if (audioAnswer.getLIKES() == null) {
+                Reactions likesReact = new Reactions();
+                likesReact.setCount(likesCount);
+                audioAnswer.setLIKES(likesReact);
+            } else {
+                audioAnswer.getLIKES().setCount(likesCount);
+            }
+            audioAnswer.setLikedByCurrentUser(true);
+            reactionsCallback.updateReactions(Reactions.ReactType.LIKES, questionItem.getId(), audioAnswer.getId(),
+                    likesCount, true, currentPosition);
+            audioAnswers.set(currentPosition, audioAnswer);
+            notifyItemChanged(currentPosition, audioAnswer);
+        }
+
+        public void setAudioAnswer(AudioAnswer audioAnswer, int position) {
+            currentPosition = position;
+            this.audioAnswer = audioAnswer;
+        }
+
+        @Override
+        public void onButtonChecked(MaterialButtonToggleGroup group, int checkedId, boolean isChecked) {
+            if (isChecked) {
+                switch (checkedId) {
+                    case R.id.like_button:
+                        increaseLikesCount();
+                        break;
+                    case R.id.dislike_button:
+                        increaseDislikesCount();
+                        break;
+                }
+            } else {
+                switch (checkedId) {
+                    case R.id.like_button:
+                        decreaseLikesCount();
+                        break;
+                    case R.id.dislike_button:
+                        decreaseDislikesCount();
+                        break;
+                }
+            }
         }
     }
 }

@@ -10,6 +10,10 @@ public class AudioAnswer {
     private String audioUri;
     private long audioLength;
     private String recordedUser;
+    private Reactions LIKES;
+    private Reactions DISLIKES;
+    private boolean likedByCurrentUser;
+    private boolean dislikedByCurrentUser;
 
     public String getId() {
         return id;
@@ -45,5 +49,37 @@ public class AudioAnswer {
 
     public void setRecordedUser(String recordedUser) {
         this.recordedUser = recordedUser;
+    }
+
+    public Reactions getLIKES() {
+        return LIKES;
+    }
+
+    public void setLIKES(Reactions LIKES) {
+        this.LIKES = LIKES;
+    }
+
+    public Reactions getDISLIKES() {
+        return DISLIKES;
+    }
+
+    public void setDISLIKES(Reactions DISLIKES) {
+        this.DISLIKES = DISLIKES;
+    }
+
+    public boolean isLikedByCurrentUser() {
+        return likedByCurrentUser;
+    }
+
+    public void setLikedByCurrentUser(boolean likedByCurrentUser) {
+        this.likedByCurrentUser = likedByCurrentUser;
+    }
+
+    public boolean isDislikedByCurrentUser() {
+        return dislikedByCurrentUser;
+    }
+
+    public void setDislikedByCurrentUser(boolean dislikedByCurrentUser) {
+        this.dislikedByCurrentUser = dislikedByCurrentUser;
     }
 }

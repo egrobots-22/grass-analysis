@@ -30,7 +30,7 @@ public class BaseActivity extends DaggerApplication {
         SharedPreferences.Editor editor = sharedPreferences.edit();
         String deviceToken = sharedPreferences.getString(Constants.DEVICE_TOKEN, null);
         if (deviceToken == null) {
-            String deviceUniqueId = UUID.randomUUID().toString();
+            String deviceUniqueId = UUID.randomUUID().toString() + "-" + System.currentTimeMillis();
             String username = givenUsingJava8_whenGeneratingRandomAlphabeticString_thenCorrect();
             editor.putString(Constants.USER_NAME, "User: " + username);
             editor.putString(Constants.DEVICE_TOKEN, deviceUniqueId);

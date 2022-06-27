@@ -45,8 +45,8 @@ public class DatabaseRepository {
         return firebaseDataSource.uploadRecordedAudio(audioAnswer, questionItem, username);
     }
 
-    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(QuestionItem questionItem) {
-        return firebaseDataSource.getRecordedAudiosForQuestion(questionItem);
+    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(QuestionItem questionItem, String deviceToken) {
+        return firebaseDataSource.getRecordedAudiosForQuestion(questionItem, deviceToken);
     }
 
     public Single<Boolean> isOtherVideosFound(String deviceToken) {
@@ -57,7 +57,7 @@ public class DatabaseRepository {
         return firebaseDataSource.isCurrentUserVideosFound(deviceToken);
     }
 
-    public Flowable<QuestionItem> updateReactions(Reactions.ReactType type, String questionId, String userId, int newCount, boolean increase, String deviceToken) {
-        return firebaseDataSource.updateReactions(type, questionId, userId, newCount, increase, deviceToken);
+    public Flowable<QuestionItem> updateReactions(Reactions.ReactType type, String questionId, String audioAnswerId, String userId, int newCount, boolean increase, String deviceToken) {
+        return firebaseDataSource.updateReactions(type, questionId, audioAnswerId, userId, newCount, increase, deviceToken);
     }
 }

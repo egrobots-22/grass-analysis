@@ -271,6 +271,7 @@ public class FirebaseDataSource {
                         public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
                             QuestionItem questionItem = questionSnapshot.getValue(QuestionItem.class);
                             questionItem.setId(questionSnapshot.getKey());
+                            setQuestionAndAnswersReactions(questionItem, deviceToken);
                             if (questionItem.getLIKES() != null
                                     && questionItem.getLIKES().getUsers() != null
                                     && questionItem.getLIKES().getUsers().containsKey(deviceToken)) {
@@ -362,6 +363,19 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
+    private void setQuestionAndAnswersReactions(QuestionItem questionItem, String deviceToken) {
+        if (questionItem.getLIKES() != null
+                && questionItem.getLIKES().getUsers() != null
+                && questionItem.getLIKES().getUsers().containsKey(deviceToken)) {
+            questionItem.setLikedByCurrentUser(true);
+        }
+        if (questionItem.getDISLIKES() != null
+                && questionItem.getDISLIKES().getUsers() != null
+                && questionItem.getDISLIKES().getUsers().containsKey(deviceToken)) {
+            questionItem.setDislikedByCurrentUser(true);
+        }
+    }
+
     public Completable uploadRecordedAudio(AudioAnswer audioAnswer, QuestionItem questionItem, String username) {
         return Completable.create(emitter -> {
             StorageReference storageReference = FirebaseStorage.getInstance().getReference(Constants.AUDIO_PATH + System.currentTimeMillis() + Constants.AUDIO_FILE_TYPE);
@@ -402,7 +416,7 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(QuestionItem questionItem) {
+    public Flowable<AudioAnswer> getRecordedAudiosForQuestion(QuestionItem questionItem, String deviceToken) {
         return Flowable.create(emitter -> {
             DatabaseReference databaseReference = FirebaseDatabase.getInstance()
                     .getReference(Constants.QUESTIONS_NODE)
@@ -414,6 +428,16 @@ public class FirebaseDataSource {
                     if (snapshot.exists()) {
                         AudioAnswer audioAnswer = snapshot.getValue(AudioAnswer.class);
                         audioAnswer.setId(snapshot.getKey());
+                        if (audioAnswer.getLIKES() != null
+                                && audioAnswer.getLIKES().getUsers() != null
+                                && audioAnswer.getLIKES().getUsers().containsKey(deviceToken)) {
+                            audioAnswer.setLikedByCurrentUser(true);
+                        }
+                        if (audioAnswer.getDISLIKES() != null
+                                && audioAnswer.getDISLIKES().getUsers() != null
+                                && audioAnswer.getDISLIKES().getUsers().containsKey(deviceToken)) {
+                            audioAnswer.setDislikedByCurrentUser(true);
+                        }
 //                            audioAnswer.setAudioUri((String) snapshot.getValue());
 //                            String audioAnswerUri = (String) snapshot.getValue();
                         emitter.onNext(audioAnswer);
@@ -484,15 +508,24 @@ public class FirebaseDataSource {
         }, BackpressureStrategy.BUFFER);
     }
 
-    public Flowable<QuestionItem> updateReactions(Reactions.ReactType type, String questionId, String userId, int newCount, boolean increase, String deviceToken) {
+    public Flowable<QuestionItem> updateReactions(Reactions.ReactType type, String questionId, String audioAnswerId,
+                                                  String userId, int newCount, boolean increase, String deviceToken) {
         return Flowable.create(emitter -> {
             //update question item, retrieved
-            DatabaseReference questionReactRef = firebaseDatabase
-                    .getReference(Constants.QUESTIONS_NODE)
-                    .child(questionId)
-                    .child(type.toString());
-
-            DatabaseReference questionReactCountRef = questionReactRef.child("count");
+            DatabaseReference questionReactRef;
+            if (audioAnswerId == null) {
+                questionReactRef = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .child(questionId)
+                        .child(type.toString());
+            } else {
+                questionReactRef = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .child(questionId)
+                        .child("answers")
+                        .child(audioAnswerId)
+                        .child(type.toString());
+            }
 
             //update count to the new value
             questionReactRef.child("count").setValue(newCount).addOnCompleteListener(task -> {

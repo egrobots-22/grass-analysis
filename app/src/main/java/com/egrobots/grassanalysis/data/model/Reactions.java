@@ -29,7 +29,7 @@ public class Reactions {
         DISLIKES
     }
 
-    public interface QuestionReactionsCallback {
-        void updateReactions(ReactType type, String questionId, int newCount, boolean increase, int position);
+    public interface ReactionsCallback {
+        void updateReactions(ReactType type, String questionId, String audioAnswerId, int newCount, boolean increase, int position);
     }
 }

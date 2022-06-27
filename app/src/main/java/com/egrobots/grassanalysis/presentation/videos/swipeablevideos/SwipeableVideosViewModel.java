@@ -167,8 +167,8 @@ public class SwipeableVideosViewModel extends ViewModel {
                 });
     }
 
-    public void updateReactions(Reactions.ReactType type, String questionId, int newCount, boolean increase) {
-        databaseRepository.updateReactions(type, questionId, localDataRepository.getDeviceToken(), newCount, increase, localDataRepository.getDeviceToken())
+    public void updateReactions(Reactions.ReactType type, String questionId, String audioAnswerId, int newCount, boolean increase) {
+        databaseRepository.updateReactions(type, questionId, audioAnswerId, localDataRepository.getDeviceToken(), newCount, increase, localDataRepository.getDeviceToken())
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .toObservable()

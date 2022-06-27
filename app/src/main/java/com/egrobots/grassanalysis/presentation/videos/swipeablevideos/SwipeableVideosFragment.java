@@ -57,7 +57,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         implements RecordAudioImpl.RecordAudioCallback,
         ExoPlayerVideoManager.VideoManagerCallback,
         AudioPlayer.AudioPlayCallback,
-        Reactions.QuestionReactionsCallback {
+        Reactions.ReactionsCallback {
     private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
     private static final int RETRIEVED_VIDEOS_LIMIT = 3;
@@ -119,7 +119,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         observeUploadingVideo();
         videosAdapter.setRecordAudioCallback(this);
         videosAdapter.setAudioPlayCallback(this);
-        videosAdapter.setQuestionReactionsCallback(this);
+        videosAdapter.setReactionsCallback(this);
         viewPagerVideos.setAdapter(videosAdapter);
         viewPagerVideos.registerOnPageChangeCallback(new OnVideoChangeCallback());
         swipeableVideosViewModel = new ViewModelProvider(getViewModelStore(), providerFactory).get(SwipeableVideosViewModel.class);
@@ -371,9 +371,9 @@ public class SwipeableVideosFragment extends DaggerFragment
     }
 
     @Override
-    public void updateReactions(Reactions.ReactType type, String questionId, int newCount, boolean increase, int position) {
+    public void updateReactions(Reactions.ReactType type, String questionId, String audioAnswerId, int newCount, boolean increase, int position) {
         updatedQuestionItemPosition = position;
-        swipeableVideosViewModel.updateReactions(type, questionId, newCount, increase);
+        swipeableVideosViewModel.updateReactions(type, questionId, audioAnswerId, newCount, increase);
     }
 
     class OnVideoChangeCallback extends ViewPager2.OnPageChangeCallback {
