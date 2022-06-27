@@ -54,10 +54,10 @@ public class ExoPlayerVideoManager {
         }
     }
 
-    public void pausePlayer() {
+    public void pausePlayer(boolean seekToStart) {
         if (this.exoPlayer != null) {
             this.exoPlayer.pause();
-            this.exoPlayer.seekTo(0,0);
+            if (seekToStart) this.exoPlayer.seekTo(0,0);
         }
     }
 

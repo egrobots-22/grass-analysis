@@ -60,7 +60,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         Reactions.ReactionsCallback {
     private static final String TAG = SwipeableVideosFragment.class.getSimpleName();
     private static final int AUDIO_REQUEST_PERMISSION_CODE = 0;
-    private static final int RETRIEVED_VIDEOS_LIMIT = 3;
+    private static final int RETRIEVED_VIDEOS_LIMIT = Constants.RETRIEVED_ITEMS_LIMIT_COUNT;
 
     @BindView(R.id.viewPagerVideos)
     ViewPager2 viewPagerVideos;
@@ -226,7 +226,7 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Override
     public void onStartRecording() {
         if (exoPlayerVideoManagerCur != null) {
-            exoPlayerVideoManagerCur.pausePlayer();
+            exoPlayerVideoManagerCur.pausePlayer(false);
         }
         if (audioPlayer != null)
             audioPlayer.stopAudio();
@@ -315,14 +315,14 @@ public class SwipeableVideosFragment extends DaggerFragment
     @Override
     public void onPause() {
         super.onPause();
-        if (exoPlayerVideoManagerCur != null) exoPlayerVideoManagerCur.pausePlayer();
+        if (exoPlayerVideoManagerCur != null) exoPlayerVideoManagerCur.pausePlayer(true);
         if (audioPlayer != null) audioPlayer.stopAudio();
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        if (exoPlayerVideoManagerCur != null) exoPlayerVideoManagerCur.pausePlayer();
+        if (exoPlayerVideoManagerCur != null) exoPlayerVideoManagerCur.pausePlayer(true);
         if (audioPlayer != null) audioPlayer.stopAudio();
     }
 
@@ -365,7 +365,7 @@ public class SwipeableVideosFragment extends DaggerFragment
         this.audioPlayer = audioPlayer;
         currentPlayingAnswerId = audioPlayer.getAnswerAudioId();
         if (exoPlayerVideoManagerCur != null) {
-            exoPlayerVideoManagerCur.pausePlayer();
+            exoPlayerVideoManagerCur.pausePlayer(false);
             exoPlayerVideoManagerCur.getPlayerView().hideController();
         }
     }
@@ -384,7 +384,7 @@ public class SwipeableVideosFragment extends DaggerFragment
             if (prevPosition != -1) {
                 ExoPlayerVideoManager exoPlayerVideoManagerPrev = videosAdapter.getCurrentExoPlayerManager(prevPosition);
                 if (exoPlayerVideoManagerPrev != null) {
-                    exoPlayerVideoManagerPrev.pausePlayer();
+                    exoPlayerVideoManagerPrev.pausePlayer(true);
                 }
             }
             exoPlayerVideoManagerCur = videosAdapter.getCurrentExoPlayerManager(position);
@@ -447,7 +447,7 @@ public class SwipeableVideosFragment extends DaggerFragment
                 lastPositionOfNextPage = Math.min(lastPositionOfNextPage, curAdapterSize-1);
                 for (int i = firstPositionOfNextPage; i <= lastPositionOfNextPage; i++) {
                     videosAdapter.getCurrentExoPlayerManagerList().get(i).play();
-                    videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer();
+                    videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer(true);
                 }
             }
         }
@@ -470,7 +470,7 @@ public class SwipeableVideosFragment extends DaggerFragment
             int from = to - (RETRIEVED_VIDEOS_LIMIT - 1);
             for (int i = from; i <= to; i++) {
                 videosAdapter.getCurrentExoPlayerManagerList().get(i).play();
-                videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer();
+                videosAdapter.getCurrentExoPlayerManagerList().get(i).pausePlayer(true);
                 Log.e(TAG, "Scroll backward - reinitialize video position " + i);
             }
         }

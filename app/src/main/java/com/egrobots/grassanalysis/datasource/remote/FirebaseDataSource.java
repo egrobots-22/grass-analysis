@@ -22,6 +22,7 @@ import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -39,7 +40,7 @@ import io.reactivex.Single;
 public class FirebaseDataSource {
 
     private static final String TAG = "FirebaseDataSource";
-    private static final int LIMIT_ITEM_COUNT = 3;
+    private static final int LIMIT_ITEM_COUNT = Constants.RETRIEVED_ITEMS_LIMIT_COUNT;
 
     private StorageReference storageReference;
     private FirebaseDatabase firebaseDatabase;
@@ -226,11 +227,14 @@ public class FirebaseDataSource {
         });
     }
 
-    public Flowable<QuestionItem> getVideos3(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
-        return Flowable.create(emitter -> {
-
-        }, BackpressureStrategy.BUFFER);
-    }
+//    public Flowable<QuestionItem> getCurrentUserVideos(String deviceToken, Long lastTimeStamp, boolean isCurrentUser, boolean newUploadedVideo) {
+//        return Flowable.create(emitter -> {
+//            Query videoQuery = firebaseDatabase
+//                    .getReference(Constants.QUESTIONS_NODE)
+//                    .orderByChild("deviceToken")
+//                    .equalTo(deviceToken);
+//        }, BackpressureStrategy.BUFFER);
+//    }
 
     private List<QuestionItem> videoItems;
 
@@ -238,13 +242,19 @@ public class FirebaseDataSource {
         return Flowable.create(emitter -> {
             count = 0;
             sentItemsCount = 0;
-            videoItems = new ArrayList<>();
             Query videoQuery;
             if (newUploadedVideo) {
                 videoQuery = firebaseDatabase
                         .getReference(Constants.QUESTIONS_NODE)
                         .orderByChild("timestamp")
                         .limitToFirst(1);
+            } else if (isCurrentUser && lastTimeStamp == null) {
+                videoQuery = firebaseDatabase
+                        .getReference(Constants.QUESTIONS_NODE)
+                        .orderByChild("deviceToken")
+                        .equalTo(deviceToken);
+            } else if (isCurrentUser && lastTimeStamp != null) {
+                videoQuery = null;
             } else if (lastTimeStamp != null) {
                 videoQuery = firebaseDatabase
                         .getReference(Constants.QUESTIONS_NODE)
@@ -258,108 +268,140 @@ public class FirebaseDataSource {
                         .limitToFirst(LIMIT_ITEM_COUNT);
             }
             //get count of retrieved videos firstly to check if there size smaller than the limit
-            videoQuery.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    int size = Long.valueOf(StreamSupport.stream(snapshot.getChildren().spliterator(), false).count()).intValue();
-                    if (size == 0) {
-                        emitter.onNext(videoItems);
+            if (videoQuery != null) {
+                videoItems = new ArrayList<>();
+                videoQuery.addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        int size = Long.valueOf(StreamSupport.stream(snapshot.getChildren().spliterator(), false).count()).intValue();
+                        if (size == 0) {
+                            emitter.onNext(videoItems);
 //                        return;
-                    }
-                    videoQuery.addChildEventListener(new ChildEventListener() {
-                        @Override
-                        public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
-                            QuestionItem questionItem = questionSnapshot.getValue(QuestionItem.class);
-                            questionItem.setId(questionSnapshot.getKey());
-                            setQuestionAndAnswersReactions(questionItem, deviceToken);
-                            if (questionItem.getLIKES() != null
-                                    && questionItem.getLIKES().getUsers() != null
-                                    && questionItem.getLIKES().getUsers().containsKey(deviceToken)) {
-                                questionItem.setLikedByCurrentUser(true);
-                            }
-                            if (questionItem.getDISLIKES() != null
-                                    && questionItem.getDISLIKES().getUsers() != null
-                                    && questionItem.getDISLIKES().getUsers().containsKey(deviceToken)) {
-                                questionItem.setDislikedByCurrentUser(true);
-                            }
-                            if (isCurrentUser) {
-                                if (questionItem.getDeviceToken().equals(deviceToken)) {
-                                    videoItems.add(questionItem);
-                                    sentItemsCount++;
+                        }
+                        videoQuery.addChildEventListener(new ChildEventListener() {
+                            @Override
+                            public void onChildAdded(@NonNull DataSnapshot questionSnapshot, @Nullable String previousChildName) {
+                                QuestionItem questionItem = questionSnapshot.getValue(QuestionItem.class);
+                                questionItem.setId(questionSnapshot.getKey());
+                                setQuestionAndAnswersReactions(questionItem, deviceToken);
+                                if (questionItem.getLIKES() != null
+                                        && questionItem.getLIKES().getUsers() != null
+                                        && questionItem.getLIKES().getUsers().containsKey(deviceToken)) {
+                                    questionItem.setLikedByCurrentUser(true);
                                 }
-                            } else {
-                                if (!questionItem.getDeviceToken().equals(deviceToken)) {
-                                    videoItems.add(questionItem);
-                                    sentItemsCount++;
+                                if (questionItem.getDISLIKES() != null
+                                        && questionItem.getDISLIKES().getUsers() != null
+                                        && questionItem.getDISLIKES().getUsers().containsKey(deviceToken)) {
+                                    questionItem.setDislikedByCurrentUser(true);
                                 }
-                            }
-                            count++;
+                                if (isCurrentUser) {
+                                    if (questionItem.getDeviceToken().equals(deviceToken)) {
+                                        videoItems.add(questionItem);
+                                        sentItemsCount++;
+                                    }
+                                } else {
+                                    if (!questionItem.getDeviceToken().equals(deviceToken)) {
+                                        videoItems.add(questionItem);
+                                        sentItemsCount++;
+                                    }
+                                }
+                                count++;
 
-                            //if video is just uploaded, sent it
-                            if (isCurrentUser && questionItem.isJustUploaded() && questionItem.getDeviceToken().equals(deviceToken)) {
-                                //set value of just uploaded to false, and save to database
-                                questionSnapshot.child("justUploaded")
-                                        .getRef()
-                                        .setValue(false)
-                                        .addOnCompleteListener(task -> {
-                                            //sent the item to the user
-                                            questionItem.setIsJustUploaded(false);
-                                            questionItem.setFlag(Constants.UPLOADED);
-                                            List<QuestionItem> uploadedItemList = new ArrayList<>();
-                                            uploadedItemList.add(questionItem);
-                                            emitter.onNext(uploadedItemList);
-                                        });
-                            } else {
+                                //if video is just uploaded, sent it
+                                if (isCurrentUser && questionItem.isJustUploaded() && questionItem.getDeviceToken().equals(deviceToken)) {
+                                    //set value of just uploaded to false, and save to database
+                                    questionSnapshot.child("justUploaded")
+                                            .getRef()
+                                            .setValue(false)
+                                            .addOnCompleteListener(task -> {
+                                                //sent the item to the user
+                                                questionItem.setIsJustUploaded(false);
+                                                questionItem.setFlag(Constants.UPLOADED);
+                                                List<QuestionItem> uploadedItemList = new ArrayList<>();
+                                                uploadedItemList.add(questionItem);
+                                                emitter.onNext(uploadedItemList);
+                                            });
+                                } else {
 
-                                if (count == size) {
-                                    if (size < LIMIT_ITEM_COUNT && sentItemsCount == 0) {
-                                        //no more data
-                                        emitter.onNext(videoItems);
-                                    } else if (size < LIMIT_ITEM_COUNT && sentItemsCount > 0) {
-                                        emitter.onNext(videoItems);
-                                    } else if (size == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
-                                        //retrieve data again
-                                        QuestionItem latestItem = new QuestionItem();
-                                        latestItem.setFlag(Constants.LATEST);
-                                        latestItem.setTimestamp(questionItem.getTimestamp());
-                                        videoItems.add(latestItem);
-                                        emitter.onNext(videoItems);
-                                    } else if (size == LIMIT_ITEM_COUNT && sentItemsCount > 0) {
-                                        //send retrieved items
-                                        emitter.onNext(videoItems);
+                                    if (count == size) {
+                                        if (size < LIMIT_ITEM_COUNT && sentItemsCount == 0) {
+                                            //no more data
+                                            emitter.onNext(videoItems);
+                                        } else if (size < LIMIT_ITEM_COUNT && sentItemsCount > 0) {
+                                            emitter.onNext(videoItems);
+                                        } else if (size == LIMIT_ITEM_COUNT && sentItemsCount == 0) {
+                                            //retrieve data again
+                                            QuestionItem latestItem = new QuestionItem();
+                                            latestItem.setFlag(Constants.LATEST);
+                                            latestItem.setTimestamp(questionItem.getTimestamp());
+                                            videoItems.add(latestItem);
+                                            emitter.onNext(videoItems);
+                                        } else if (size == LIMIT_ITEM_COUNT && sentItemsCount > 0) {
+                                            //send retrieved items
+                                            emitter.onNext(videoItems);
+                                        } else if (size > LIMIT_ITEM_COUNT) {//retrieving all current user videos data
+                                            Collections.reverse(videoItems);
+                                            List<QuestionItem> tmpItems = new ArrayList<>();
+                                            int minSize = Math.min(LIMIT_ITEM_COUNT, videoItems.size());
+                                            for (int i = 0; i < minSize; i++) {
+                                                QuestionItem item = videoItems.get(i);
+                                                tmpItems.add(item);
+                                            }
+                                            emitter.onNext(tmpItems);
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        @Override
-                        public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                            @Override
+                            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                        }
+                            }
 
-                        @Override
-                        public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                            @Override
+                            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
 
-                        }
+                            }
 
-                        @Override
-                        public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+                            @Override
+                            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
 
-                        }
+                            }
 
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError error) {
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) {
 
-                        }
+                            }
 
-                    });
+                        });
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+
+                    }
+                });
+            } else {
+                //send list of video items for current user
+                List<QuestionItem> tmpItems = new ArrayList<>();
+                int newIndex = 0;
+                for (int i = 0; i < videoItems.size(); i++) {
+                    //get position of last time stamp
+                    QuestionItem item = videoItems.get(i);
+                    if (item.getTimestamp() >= lastTimeStamp) {
+                        newIndex = i;
+                        break;
+                    }
                 }
-
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-
+                if (newIndex > 0) { //if new index = 0, so data is finished
+                    int minSize = Math.min(LIMIT_ITEM_COUNT + newIndex, videoItems.size());
+                    for (int i = newIndex; i < minSize; i++) {
+                        QuestionItem item = videoItems.get(i);
+                        tmpItems.add(item);
+                    }
                 }
-            });
+                emitter.onNext(tmpItems);
+            }
         }, BackpressureStrategy.BUFFER);
     }
 
