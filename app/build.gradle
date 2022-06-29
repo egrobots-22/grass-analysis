@@ -11,8 +11,8 @@ android {
         applicationId "com.egrobots.grassanalysis"
         minSdkVersion 24
         targetSdkVersion 31
-        versionCode 5
-        versionName "beta 1.0"
+        versionCode 6
+        versionName "beta 1.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
